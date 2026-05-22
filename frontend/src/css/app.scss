@@ -1,0 +1,195 @@
+// AIDetect — Atelier (multi-hue) global styles.
+// Editorial / lab-instrument aesthetic: Geist + Geist Mono + Instrument Serif italic,
+// generous whitespace, single bright accent earning every appearance.
+
+:root {
+  --paper:       #F8F8F4;   // warm off-white background
+  --paper-2:     #F1F1EC;   // slightly deeper paper for separation
+  --ink:         #141414;
+  --ink-soft:    #4A4A4A;
+  --ink-mute:    #8A8A85;
+  --rule:        #DDD9D0;   // hairline rules
+  --rule-strong: #B8B4AB;
+
+  --accent:      #3A3FB5;   // indigo — primary CTA, high severity, big numbers
+  --accent-2:    #E76F4A;   // coral — medium severity
+  --accent-3:    #48A079;   // sage  — low severity
+
+  --paper-hover: #EFEDE6;
+  --field-bg:    #FFFFFF;   // inputs are always white
+  --field-border:#D6D2C8;
+
+  --font-ui:     'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:   'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  --font-display:'Instrument Serif', Georgia, 'Times New Roman', serif;
+}
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.q-page {
+  background: var(--paper);
+}
+
+.font-mono   { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.font-display{ font-family: var(--font-display); font-style: italic; }
+
+.tracking-wide  { letter-spacing: 0.08em; }
+.tracking-tight { letter-spacing: -0.02em; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.h-display {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.editorial-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+.editorial-card--solid {
+  background: #FFFFFF;
+}
+
+.editorial-rule {
+  height: 1px;
+  background: var(--rule);
+}
+
+// All Quasar inputs / textareas / selects: white background.
+.q-field--outlined .q-field__control {
+  background: var(--field-bg) !important;
+  border-radius: 6px;
+}
+.q-field--outlined .q-field__control::before {
+  border: 1px solid var(--field-border) !important;
+}
+.q-field--outlined.q-field--focused .q-field__control::after {
+  border: 2px solid var(--accent) !important;
+}
+textarea, input { background: var(--field-bg); }
+
+// Tabs — bigger, monospace, no ink-bar shadow.
+.q-tabs {
+  background: transparent !important;
+}
+.q-tab {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  min-height: 44px;
+  padding: 0 28px;
+  margin-right: 8px;
+}
+.q-tab:last-child { margin-right: 0; }
+.q-tab--active { color: var(--ink); }
+.q-tab__indicator { height: 2px; background: var(--accent) !important; }
+.q-tab__content { padding: 0 4px; }
+
+// Buttons — clean Geist, accent CTA.
+.q-btn { font-family: var(--font-ui); letter-spacing: 0; }
+.q-btn.bg-primary, .q-btn--unelevated.bg-primary { background: var(--accent) !important; color: #fff !important; }
+.q-btn.text-primary { color: var(--accent) !important; }
+
+// Toggle group (Fast / Balanced / Thorough): roomier hit targets, even widths,
+// a thin divider between options so they don't look like a single squashed pill.
+.q-btn-toggle {
+  background: var(--paper-2);
+  padding: 4px;
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 4px;
+}
+.q-btn-toggle .q-btn {
+  padding: 6px 22px;
+  min-width: 96px;
+  min-height: 32px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.q-btn-toggle .q-btn--standard.bg-grey-3 { background: transparent !important; }
+.q-btn-toggle .q-btn.bg-primary { background: var(--accent) !important; }
+
+// Chips & badges — editorial pill style.
+.q-chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+.q-badge { font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.04em; }
+
+// Severity tokens — used by inline severity dots / pills.
+.sev-low    { color: var(--accent-3); border-color: var(--accent-3); }
+.sev-medium { color: var(--accent-2); border-color: var(--accent-2); }
+.sev-high   { color: var(--accent);   border-color: var(--accent);   }
+
+.sev-bg-low    { background: rgba(72, 160, 121, 0.12); color: var(--accent-3); }
+.sev-bg-medium { background: rgba(231, 111, 74, 0.14); color: var(--accent-2); }
+.sev-bg-high   { background: rgba(58, 63, 181, 0.12); color: var(--accent);   }
+
+// AI-flagged inline spans in evidence text.
+// Two layers:
+//   .span        — phrase / structure match: bold tinted background + thick
+//                   coloured underline that survives sitting inside a sentence
+//                   wash.
+//   .sent-flag   — sentence-level AI-likeness from the LLM judge: very soft
+//                   tinted background covering the whole sentence; phrase
+//                   underlines render on top untouched.
+mark.span {
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: transparent;
+  border-bottom: none;
+  box-shadow: inset 0 -3px 0 currentColor;
+  font-weight: 500;
+}
+mark.span-low    { color: inherit; box-shadow: inset 0 -3px 0 var(--accent-3); background: rgba(72, 160, 121, 0.18); }
+mark.span-medium { color: inherit; box-shadow: inset 0 -3px 0 var(--accent-2); background: rgba(231, 111, 74, 0.22); }
+mark.span-high   { color: inherit; box-shadow: inset 0 -3px 0 var(--accent);   background: rgba(58, 63, 181, 0.18); }
+
+mark.sent-flag        { padding: 1px 0; border-radius: 0; border-bottom: none; box-shadow: none; }
+mark.sent-flag-low    { background: rgba(72, 160, 121, 0.06); }
+mark.sent-flag-medium { background: rgba(231, 111, 74, 0.08); }
+mark.sent-flag-high   { background: rgba(58, 63, 181, 0.08); }
+
+// A phrase span nested inside a sentence span keeps its full punchy background —
+// don't let the parent's lighter wash bleed through.
+mark.sent-flag mark.span { background-color: var(--field-bg); }
+mark.sent-flag mark.span-low    { background-color: rgba(72, 160, 121, 0.22); }
+mark.sent-flag mark.span-medium { background-color: rgba(231, 111, 74, 0.24); }
+mark.sent-flag mark.span-high   { background-color: rgba(58, 63, 181, 0.22); }
+
+// Gauge value (huge number) typography.
+.gauge-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--ink);
+}

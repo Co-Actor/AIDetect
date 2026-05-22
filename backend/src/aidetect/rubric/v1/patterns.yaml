@@ -1,0 +1,353 @@
+# AIDetect rubric v1 — pattern registry.
+# Sources merged with deduplication:
+#   anti-ai-guide  -> /Users/isalmova/Projects/CCCrafts/writing style/step2/docs/author_rules/Anti-AI Writing Guide.pdf
+#   nl-rules       -> /Users/isalmova/Projects/CCCrafts/writing style/step2/docs/Rules/NATURAL_LANGUAGE_RULES.md
+#   repurposing    -> /Users/isalmova/Projects/CCCrafts/writing style/step2/docs/Rules/prompt to repurpose any content.txt
+#   wikipedia      -> https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing
+#   humanizer      -> https://github.com/blader/humanizer
+#
+# Each entry:
+#   phrase          lowercased pattern (string used by Layer B with optional word-boundary match)
+#   severity        low | medium | high
+#   suggestion      short rewrite hint
+#   languages       [en], [ru], [en, ru], etc.
+#   category        verb_cliche | metaphor | opener | closer | transition | empathy | hedge | meta | tone
+#   source          comma-separated sources for traceability
+#   word_boundary   true (default) | false  -> false enables substring match (multi-word collocations)
+#
+# Score weight per match:
+#   low=0.05, medium=0.10, high=0.20  (capped at 1.0 by the engine)
+version: "v1"
+
+banned_phrases:
+  # === verb cliches (en) ===
+  - { phrase: "leverage", severity: high,   suggestion: "Use 'use'.",                         languages: [en], category: verb_cliche, source: "anti-ai-guide,repurposing" }
+  - { phrase: "delve",    severity: medium, suggestion: "'Look at' or just start the topic.", languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "delve into",        severity: high, suggestion: "Cut entirely or 'Here's what I found'.", languages: [en], category: verb_cliche, source: "wikipedia,humanizer" }
+  - { phrase: "dive into",         severity: high, suggestion: "Cut entirely.",               languages: [en], category: verb_cliche, source: "anti-ai-guide,repurposing" }
+  - { phrase: "dive deep",         severity: high, suggestion: "Just say what you'll cover.", languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "deep dive",         severity: high, suggestion: "'Detailed look' or be specific.", languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "harness the power of", severity: high, suggestion: "'Use X to Y'.",            languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "harness",           severity: medium, suggestion: "'Use'.",                    languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "navigate challenges", severity: medium, suggestion: "'Deal with' or name the challenge.", languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "streamline",        severity: medium, suggestion: "'Simplify' or 'speed up'.", languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "foster",            severity: medium, suggestion: "'Build' or 'encourage'.",   languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "spearhead",         severity: medium, suggestion: "'Lead', 'start', or 'run'.",languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "resonate",          severity: medium, suggestion: "'Hit home', 'made sense to'.", languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "elevate",           severity: medium, suggestion: "'Improve' or be specific.", languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "empower",           severity: medium, suggestion: "Describe the actual support.", languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "showcase",          severity: low,    suggestion: "'Show'.",                   languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "highlight",         severity: low,    suggestion: "'Show', 'point out'.",      languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "underscore",        severity: low,    suggestion: "'Show', 'prove'.",          languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "garner",            severity: low,    suggestion: "'Get' or 'attract'.",       languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "bolster",           severity: low,    suggestion: "'Strengthen' or 'support'.",languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "boasts",            severity: medium, suggestion: "'Has' or describe it.",     languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "enhance",           severity: low,    suggestion: "'Improve' or be specific.", languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "additionally",      severity: low,    suggestion: "'Also', 'plus', or cut.",   languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "align with",        severity: low,    suggestion: "'Match', 'fit'.",           languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "serves as",         severity: medium, suggestion: "'Is' or 'acts as'.",        languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "stands as",         severity: medium, suggestion: "'Is' or be direct.",        languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "represents",        severity: low,    suggestion: "'Is' when it works.",       languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "embrace",           severity: medium, suggestion: "'Adopt', 'use'.",           languages: [en], category: verb_cliche, source: "wikipedia" }
+  - { phrase: "navigate",          severity: medium, suggestion: "'Deal with' or be specific.", languages: [en], category: verb_cliche, source: "wikipedia" }
+
+  # === marketing metaphors (en) ===
+  - { phrase: "game-changer",      severity: high,   suggestion: "Name the specific change.", languages: [en], category: metaphor, source: "anti-ai-guide,repurposing" }
+  - { phrase: "game changing",     severity: high,   suggestion: "Name the specific change.", languages: [en], category: metaphor, source: "humanizer" }
+  - { phrase: "game-changing",     severity: high,   suggestion: "Name the specific change.", languages: [en], category: metaphor, source: "humanizer" }
+  - { phrase: "cutting-edge",      severity: high,   suggestion: "Name the specific tech.",   languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "state-of-the-art",  severity: high,   suggestion: "Name the specific tech.",   languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "groundbreaking",    severity: high,   suggestion: "Be specific about what's new.", languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "revolutionary",     severity: high,   suggestion: "Describe the specific before/after.", languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "transformative",    severity: high,   suggestion: "Describe the specific change.", languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "transformational",  severity: high,   suggestion: "Describe the specific change.", languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "seamlessly",        severity: high,   suggestion: "Describe the actual experience.", languages: [en], category: metaphor, source: "anti-ai-guide,repurposing" }
+  - { phrase: "seamless",          severity: medium, suggestion: "Describe the actual experience.", languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "robust",            severity: medium, suggestion: "Describe what makes it strong.", languages: [en], category: metaphor, source: "anti-ai-guide,wikipedia" }
+  - { phrase: "pivotal",           severity: medium, suggestion: "'Important' or describe why it matters.", languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "paradigm shift",    severity: high,   suggestion: "Describe the specific change.", languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "bottleneck",        severity: medium, suggestion: "Name the specific constraint.", languages: [en], category: metaphor, source: "repurposing" }
+  - { phrase: "synergy",           severity: medium, suggestion: "Say what the actual benefit is.", languages: [en], category: metaphor, source: "repurposing" }
+  - { phrase: "ecosystem",         severity: low,    suggestion: "'System' or be specific.",   languages: [en], category: metaphor, source: "repurposing" }
+  - { phrase: "move the needle",   severity: medium, suggestion: "Be specific about the result.", languages: [en], category: metaphor, source: "repurposing" }
+  - { phrase: "low-hanging fruit", severity: medium, suggestion: "Be specific about what's easy.", languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "rich tapestry",     severity: medium, suggestion: "Describe the actual variety.", languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "tapestry",          severity: low,    suggestion: "'Mix' or 'range'.",          languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "landscape",         severity: low,    suggestion: "'Market' or 'industry'.",    languages: [en], category: metaphor, source: "anti-ai-guide,wikipedia" }
+  - { phrase: "realm",             severity: low,    suggestion: "'Area', 'space'.",           languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "intricate",         severity: low,    suggestion: "'Complex' or describe it.",  languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "meticulous",        severity: low,    suggestion: "'Careful' or describe it.",  languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "vibrant",           severity: low,    suggestion: "Describe what's happening.", languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "testament",         severity: low,    suggestion: "Describe what it actually shows.", languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "myriad",            severity: low,    suggestion: "'Many' or use a number.",    languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "nestled",           severity: low,    suggestion: "'Located' or be specific.",  languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "diverse array",     severity: low,    suggestion: "Name what's diverse.",       languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "natural beauty",    severity: low,    suggestion: "Describe what's beautiful.", languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "incredible",        severity: low,    suggestion: "Be specific about why.",     languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "amazing",           severity: low,    suggestion: "Be specific.",               languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "powerful insight",  severity: medium, suggestion: "Just give the insight.",     languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "mind-blowing",      severity: medium, suggestion: "Be specific about why.",     languages: [en], category: metaphor, source: "anti-ai-guide" }
+  - { phrase: "data-driven",       severity: low,    suggestion: "Say what data was used.",    languages: [en], category: metaphor, source: "humanizer" }
+  - { phrase: "best in class",     severity: medium, suggestion: "Show evidence.",             languages: [en], category: metaphor, source: "humanizer" }
+  - { phrase: "cross-functional",  severity: low,    suggestion: "Describe the actual collaboration.", languages: [en], category: metaphor, source: "humanizer" }
+
+  # === unlock / potential family (en) ===
+  - { phrase: "unlock your potential", severity: high, suggestion: "Describe the specific outcome.", languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "unlock the secrets",   severity: high, suggestion: "Describe the specific outcome.", languages: [en], category: verb_cliche, source: "anti-ai-guide" }
+  - { phrase: "unlock",               severity: medium, suggestion: "'Access' or be specific.",    languages: [en], category: verb_cliche, source: "anti-ai-guide,repurposing" }
+
+  # === openers (en) ===
+  - { phrase: "in today's fast-paced world", severity: high, suggestion: "Open with a specific fact.", languages: [en], category: opener, source: "anti-ai-guide,wikipedia" }
+  - { phrase: "in today's world",            severity: high, suggestion: "Open with a specific fact.", languages: [en], category: opener, source: "wikipedia" }
+  - { phrase: "in an era of",                severity: high, suggestion: "Cut. Start with the fact.",  languages: [en], category: opener, source: "wikipedia" }
+  - { phrase: "it's no secret",              severity: high, suggestion: "Delete. Start with the fact.", languages: [en], category: opener, source: "anti-ai-guide" }
+  - { phrase: "have you ever wondered",      severity: high, suggestion: "Cut. Start with a scene.",   languages: [en], category: opener, source: "wikipedia" }
+  - { phrase: "let's dive in",               severity: high, suggestion: "Cut.",                       languages: [en], category: opener, source: "humanizer,repurposing" }
+  - { phrase: "here's what you need to know", severity: high, suggestion: "Just tell them.",           languages: [en], category: opener, source: "humanizer" }
+  - { phrase: "in this post",                severity: medium, suggestion: "Don't announce. Just say it.", languages: [en], category: opener, source: "wikipedia" }
+  - { phrase: "at the end of the day",       severity: medium, suggestion: "Cut entirely.",            languages: [en], category: closer, source: "anti-ai-guide" }
+
+  # === closers (en) ===
+  - { phrase: "in conclusion",       severity: high,   suggestion: "End forward, not backward.",       languages: [en], category: closer, source: "anti-ai-guide" }
+  - { phrase: "to summarize",        severity: high,   suggestion: "End with a question or fact.",     languages: [en], category: closer, source: "anti-ai-guide" }
+  - { phrase: "in summary",          severity: medium, suggestion: "Just stop.",                       languages: [en], category: closer, source: "anti-ai-guide" }
+  - { phrase: "to wrap up",          severity: medium, suggestion: "End with the next move.",         languages: [en], category: closer, source: "humanizer" }
+  - { phrase: "the future is bright",severity: high,   suggestion: "End with something specific.",     languages: [en], category: closer, source: "humanizer" }
+  - { phrase: "the future looks promising", severity: high, suggestion: "End with concrete plans.",   languages: [en], category: closer, source: "humanizer" }
+  - { phrase: "thank you for reading", severity: medium, suggestion: "End with a question.",         languages: [en], category: closer, source: "anti-ai-guide" }
+  - { phrase: "frequently asked questions", severity: low, suggestion: "Just answer directly.",       languages: [en], category: closer, source: "wikipedia" }
+
+  # === transitions / hedges (en) ===
+  - { phrase: "that said",                  severity: medium, suggestion: "Make bridges carry information.", languages: [en], category: transition, source: "anti-ai-guide" }
+  - { phrase: "that being said",            severity: medium, suggestion: "Make bridges carry information.", languages: [en], category: transition, source: "anti-ai-guide" }
+  - { phrase: "with that in mind",          severity: medium, suggestion: "Make bridges carry information.", languages: [en], category: transition, source: "anti-ai-guide" }
+  - { phrase: "interestingly enough",       severity: medium, suggestion: "Just tell them the fact.",       languages: [en], category: transition, source: "anti-ai-guide" }
+  - { phrase: "it's worth noting that",     severity: low,    suggestion: "Cut. State the fact.",           languages: [en], category: transition, source: "anti-ai-guide" }
+  - { phrase: "here's where it gets interesting", severity: medium, suggestion: "Build genuine tension.",   languages: [en], category: transition, source: "anti-ai-guide" }
+  - { phrase: "but here's the thing",       severity: medium, suggestion: "Just say it.",                   languages: [en], category: transition, source: "anti-ai-guide" }
+  - { phrase: "the reality is",             severity: medium, suggestion: "State the fact directly.",       languages: [en], category: hedge, source: "humanizer" }
+  - { phrase: "the reality is that",        severity: high,   suggestion: "State the fact directly.",       languages: [en], category: hedge, source: "humanizer" }
+  - { phrase: "what i want to say is",      severity: high,   suggestion: "Just say it.",                   languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "what i'm trying to say is",  severity: high,   suggestion: "Just say it.",                   languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "i genuinely find",           severity: medium, suggestion: "Cut the genuinely.",             languages: [en], category: hedge, source: "humanizer" }
+  - { phrase: "fall into three categories", severity: high,   suggestion: "Drop signposting; just list them.", languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "fall into the following",    severity: medium, suggestion: "Just list them.",                languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "fine-grained control",       severity: medium, suggestion: "Be specific about what control.", languages: [en], category: metaphor, source: "humanizer" }
+  - { phrase: "the person at the wheel",    severity: medium, suggestion: "Drop the metaphor.",             languages: [en], category: metaphor, source: "humanizer" }
+  - { phrase: "robust and",                 severity: low,    suggestion: "Describe what is robust.",       languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "highly efficient",           severity: low,    suggestion: "Give the number.",               languages: [en], category: metaphor, source: "wikipedia" }
+  - { phrase: "while there are challenges, there are also opportunities", severity: high, suggestion: "Have an actual opinion.", languages: [en], category: hedge, source: "anti-ai-guide" }
+  - { phrase: "on one hand",                severity: medium, suggestion: "Pick a side or explain tradeoff.", languages: [en], category: hedge, source: "anti-ai-guide" }
+  - { phrase: "experts agree",              severity: medium, suggestion: "Name specific people or data.",  languages: [en], category: hedge, source: "wikipedia" }
+  - { phrase: "researchers believe",        severity: medium, suggestion: "Link to actual research.",       languages: [en], category: hedge, source: "wikipedia" }
+  - { phrase: "studies have shown",         severity: medium, suggestion: "Cite the study.",                languages: [en], category: hedge, source: "wikipedia" }
+  - { phrase: "industry reports",           severity: medium, suggestion: "Link to the actual report.",     languages: [en], category: hedge, source: "wikipedia" }
+  - { phrase: "observers have noted",       severity: medium, suggestion: "Be specific about who.",         languages: [en], category: hedge, source: "wikipedia" }
+  - { phrase: "some critics argue",         severity: medium, suggestion: "Name the critics.",              languages: [en], category: hedge, source: "wikipedia" }
+
+  # === fake empathy (en) ===
+  - { phrase: "we've all been there",       severity: high, suggestion: "Describe the specific situation.", languages: [en], category: empathy, source: "anti-ai-guide" }
+  - { phrase: "if you're like most people", severity: high, suggestion: "Be specific about who.",          languages: [en], category: empathy, source: "anti-ai-guide" }
+  - { phrase: "you're not alone",           severity: medium, suggestion: "Describe the specific situation.", languages: [en], category: empathy, source: "anti-ai-guide" }
+  - { phrase: "give yourself grace",        severity: medium, suggestion: "Be specific.",                   languages: [en], category: empathy, source: "anti-ai-guide" }
+  - { phrase: "and that's a beautiful thing", severity: low, suggestion: "Show why through specifics.",     languages: [en], category: empathy, source: "anti-ai-guide" }
+  - { phrase: "and that's completely okay", severity: low, suggestion: "Skip the reassurance.",             languages: [en], category: empathy, source: "anti-ai-guide" }
+
+  # === meta / chatbot artefacts (en) ===
+  - { phrase: "i hope this helps",          severity: high,   suggestion: "Just stop.",                     languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "let me know if",             severity: high,   suggestion: "Cut.",                           languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "feel free to",               severity: medium, suggestion: "Just tell them what to do.",     languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "as an ai language model",    severity: high,   suggestion: "Remove. Hard tell.",             languages: [en], category: meta, source: "wikipedia" }
+  - { phrase: "as a language model",        severity: high,   suggestion: "Remove. Hard tell.",             languages: [en], category: meta, source: "wikipedia" }
+
+  # === filler (en) ===
+  - { phrase: "in order to",                severity: low,    suggestion: "Use 'to'.",                      languages: [en], category: hedge, source: "repurposing" }
+  - { phrase: "due to the fact that",       severity: low,    suggestion: "Use 'because'.",                 languages: [en], category: hedge, source: "repurposing" }
+  - { phrase: "needless to say",            severity: low,    suggestion: "Cut.",                           languages: [en], category: hedge, source: "wikipedia" }
+  - { phrase: "without a doubt",            severity: low,    suggestion: "Cut.",                           languages: [en], category: hedge, source: "wikipedia" }
+
+  # === russian (verb cliches / metaphors / openers) ===
+  - { phrase: "давайте погрузимся",         severity: high,   suggestion: "Удалить. Сразу к сути.",         languages: [ru], category: opener, source: "nl-rules" }
+  - { phrase: "давайте разберём",           severity: medium, suggestion: "Удалить. Просто начните.",       languages: [ru], category: opener, source: "nl-rules" }
+  - { phrase: "раскрыть потенциал",         severity: high,   suggestion: "Опишите конкретный результат.",  languages: [ru], category: verb_cliche, source: "nl-rules" }
+  - { phrase: "раскройте свой потенциал",   severity: high,   suggestion: "Опишите конкретный результат.",  languages: [ru], category: verb_cliche, source: "nl-rules" }
+  - { phrase: "разблокируйте",              severity: high,   suggestion: "Опишите конкретный результат.",  languages: [ru], category: verb_cliche, source: "nl-rules" }
+  - { phrase: "трансформируй",              severity: high,   suggestion: "Опишите конкретное до/после.",   languages: [ru], category: metaphor,    source: "nl-rules", word_boundary: false }
+  - { phrase: "оптимизируй",                severity: medium, suggestion: "Опишите улучшение.",             languages: [ru], category: verb_cliche, source: "nl-rules", word_boundary: false }
+  - { phrase: "инновационн",                severity: medium, suggestion: "Опишите что нового.",            languages: [ru], category: metaphor,    source: "nl-rules", word_boundary: false }
+  - { phrase: "лучший в классе",            severity: medium, suggestion: "Дайте конкретное сравнение.",    languages: [ru], category: metaphor,    source: "nl-rules" }
+  - { phrase: "прорывн",                    severity: medium, suggestion: "Опишите конкретное преимущество.", languages: [ru], category: metaphor, source: "nl-rules", word_boundary: false }
+  - { phrase: "революционн",                severity: medium, suggestion: "Опишите что нового.",            languages: [ru], category: metaphor,    source: "nl-rules", word_boundary: false }
+  - { phrase: "игру меняющ",                severity: high,   suggestion: "Назовите конкретное изменение.", languages: [ru], category: metaphor,    source: "nl-rules", word_boundary: false }
+  - { phrase: "уютно расположивш",          severity: medium, suggestion: "Просто назовите место.",         languages: [ru], category: metaphor,    source: "nl-rules", word_boundary: false }
+  - { phrase: "живописн",                   severity: low,    suggestion: "Опишите конкретно.",             languages: [ru], category: metaphor,    source: "nl-rules", word_boundary: false }
+  - { phrase: "будущее выглядит многообещающе", severity: high, suggestion: "Конкретные планы или факты.",  languages: [ru], category: closer,     source: "nl-rules" }
+  - { phrase: "в современном мире",         severity: high,   suggestion: "Откройте конкретным фактом.",    languages: [ru], category: opener,     source: "nl-rules" }
+  - { phrase: "в современном быстро меняющемся мире", severity: high, suggestion: "Откройте конкретным фактом.", languages: [ru], category: opener, source: "nl-rules" }
+  - { phrase: "надеюсь, это поможет",       severity: high,   suggestion: "Просто остановитесь.",           languages: [ru], category: meta,       source: "nl-rules" }
+  - { phrase: "дайте знать, если",          severity: high,   suggestion: "Удалить.",                       languages: [ru], category: meta,       source: "nl-rules" }
+  - { phrase: "не секрет, что",             severity: high,   suggestion: "Удалить. Сразу к факту.",        languages: [ru], category: opener,     source: "nl-rules" }
+  - { phrase: "стоит отметить",             severity: low,    suggestion: "Удалить. Сразу к факту.",        languages: [ru], category: transition, source: "nl-rules" }
+  - { phrase: "подчеркнуть",                severity: low,    suggestion: "Прямо назвать.",                 languages: [ru], category: verb_cliche, source: "nl-rules", word_boundary: false }
+
+  # === soft markers (en) — weak alone, strong in combination ===
+  - { phrase: "actually",          severity: low, suggestion: "Often filler — cut.",             languages: [en], category: hedge,     source: "wikipedia" }
+  - { phrase: "essentially",       severity: low, suggestion: "Cut or 'in essence'.",            languages: [en], category: hedge,     source: "wikipedia" }
+  - { phrase: "fundamentally",     severity: low, suggestion: "Cut or be specific.",             languages: [en], category: hedge,     source: "wikipedia" }
+  - { phrase: "in essence",        severity: low, suggestion: "Cut.",                            languages: [en], category: hedge,     source: "wikipedia" }
+  - { phrase: "the real question is", severity: medium, suggestion: "Just ask the question.",   languages: [en], category: hedge,     source: "humanizer" }
+  - { phrase: "it turns out that", severity: low, suggestion: "Cut — say the fact.",             languages: [en], category: hedge,     source: "humanizer" }
+  - { phrase: "as it happens",     severity: low, suggestion: "Cut.",                            languages: [en], category: hedge,     source: "humanizer" }
+  - { phrase: "more often than not", severity: low, suggestion: "'Usually' or be specific.",     languages: [en], category: hedge,     source: "humanizer" }
+  - { phrase: "to put it simply",  severity: low, suggestion: "Cut. Just be simple.",            languages: [en], category: meta,      source: "humanizer" }
+  - { phrase: "in a nutshell",     severity: medium, suggestion: "Cut.",                         languages: [en], category: meta,      source: "humanizer" }
+  - { phrase: "the bottom line is", severity: medium, suggestion: "Just state it.",              languages: [en], category: closer,    source: "humanizer" }
+  - { phrase: "the truth is",      severity: medium, suggestion: "Just state your opinion.",     languages: [en], category: hedge,     source: "humanizer" }
+  - { phrase: "the fact is",       severity: medium, suggestion: "State the fact directly.",     languages: [en], category: hedge,     source: "humanizer" }
+  - { phrase: "by all accounts",   severity: low, suggestion: "Cite the account.",               languages: [en], category: hedge,     source: "wikipedia" }
+  - { phrase: "let's break it down", severity: medium, suggestion: "Just break it down.",        languages: [en], category: meta,      source: "humanizer" }
+  - { phrase: "let me explain",    severity: medium, suggestion: "Just explain.",                languages: [en], category: meta,      source: "humanizer" }
+  - { phrase: "stay tuned",        severity: low, suggestion: "Be specific about what's coming.",languages: [en], category: meta,      source: "humanizer" }
+  - { phrase: "imagine if",        severity: low, suggestion: "Describe a real scenario.",       languages: [en], category: opener,    source: "wikipedia" }
+  - { phrase: "picture this",      severity: low, suggestion: "Just show the scene.",            languages: [en], category: opener,    source: "humanizer" }
+
+  # === engagement bait (en) ===
+  - { phrase: "happy to discuss",  severity: medium, suggestion: "Cut or be specific.",          languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "drop a comment",    severity: medium, suggestion: "Ask a real question.",         languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "share your thoughts", severity: medium, suggestion: "Ask something specific.",    languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "let's connect",     severity: medium, suggestion: "Cut.",                         languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "feel free to reach out", severity: medium, suggestion: "Cut.",                    languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "let me know what you think", severity: high, suggestion: "Cut or ask a specific question.", languages: [en], category: meta, source: "humanizer" }
+  - { phrase: "would love to hear", severity: medium, suggestion: "Cut.",                        languages: [en], category: meta, source: "humanizer" }
+
+  # === soft markers (ru) ===
+  - { phrase: "по сути",           severity: low, suggestion: "Удалить.",                        languages: [ru], category: hedge,    source: "nl-rules" }
+  - { phrase: "по факту",          severity: low, suggestion: "Удалить.",                        languages: [ru], category: hedge,    source: "nl-rules" }
+  - { phrase: "честно говоря",     severity: low, suggestion: "Удалить или конкретно.",          languages: [ru], category: hedge,    source: "nl-rules" }
+  - { phrase: "правда в том",      severity: medium, suggestion: "Сразу к факту.",                languages: [ru], category: hedge,    source: "nl-rules" }
+  - { phrase: "дело в том",        severity: low, suggestion: "Удалить.",                        languages: [ru], category: hedge,    source: "nl-rules" }
+  - { phrase: "если разобраться",  severity: low, suggestion: "Удалить.",                        languages: [ru], category: meta,     source: "nl-rules" }
+  - { phrase: "если копнуть глубже", severity: medium, suggestion: "Сразу к фактам.",            languages: [ru], category: meta,     source: "nl-rules" }
+  - { phrase: "стоит сказать",     severity: low, suggestion: "Просто скажите.",                  languages: [ru], category: transition, source: "nl-rules" }
+  - { phrase: "стоит упомянуть",   severity: low, suggestion: "Просто упомяните.",                languages: [ru], category: transition, source: "nl-rules" }
+  - { phrase: "представьте себе",  severity: low, suggestion: "Покажите конкретно.",              languages: [ru], category: opener,   source: "nl-rules" }
+
+  # === engagement bait (ru) ===
+  - { phrase: "поделитесь в комментариях", severity: medium, suggestion: "Задайте конкретный вопрос.", languages: [ru], category: meta, source: "nl-rules" }
+  - { phrase: "напишите в комментариях",   severity: medium, suggestion: "Задайте конкретный вопрос.", languages: [ru], category: meta, source: "nl-rules" }
+  - { phrase: "буду рад обсудить",         severity: medium, suggestion: "Удалить.",                    languages: [ru], category: meta, source: "nl-rules" }
+  - { phrase: "что вы думаете",            severity: low, suggestion: "Конкретный вопрос лучше.",       languages: [ru], category: meta, source: "nl-rules" }
+
+structures:
+  - id: bookend_summary
+    description: "Final paragraph restates everything just said."
+    severity: medium
+    detection:
+      type: regex_in_tail
+      tail_chars: 280
+      patterns:
+        - "(?i)\\bin conclusion\\b"
+        - "(?i)\\bto summari[sz]e\\b"
+        - "(?i)\\bin summary\\b"
+        - "(?i)\\bto wrap (?:up|things up)\\b"
+        - "(?i)\\bto recap\\b"
+        - "(?i)в заключение"
+        - "(?i)подведём итог"
+        - "(?i)резюмиру[яе]"
+    source: "anti-ai-guide"
+
+  - id: excessive_bold_md
+    description: "Mechanical markdown bolding (>3 ** spans)."
+    severity: low
+    detection:
+      type: count_threshold
+      counter: bold_md
+      threshold: 3
+    source: "anti-ai-guide"
+
+  - id: emoji_overload
+    description: "Decorative emoji on most lines (>5)."
+    severity: low
+    detection:
+      type: count_threshold
+      counter: emoji
+      threshold: 5
+    source: "anti-ai-guide"
+
+  - id: em_dash_overuse
+    description: "Many U+2014 em-dashes (>5) — strong AI tell."
+    severity: medium
+    detection:
+      type: count_threshold
+      counter: emdash
+      threshold: 5
+    source: "anti-ai-guide,wikipedia"
+
+  - id: hashtag_block
+    description: "Five or more hashtags clustered at the post end."
+    severity: low
+    detection:
+      type: count_threshold
+      counter: hashtag
+      threshold: 5
+    source: "anti-ai-guide"
+
+  - id: unicode_bold_chars
+    description: "Unicode Mathematical Alphanumeric Symbols used to fake bold."
+    severity: high
+    detection:
+      type: regex_present
+      patterns:
+        - "[\\U0001d400-\\U0001d7ff]"
+    source: "co-actor M6"
+
+  - id: signposting_announcement
+    description: "Meta-announcement instead of just delivering the content."
+    severity: medium
+    detection:
+      type: regex_present
+      patterns:
+        - "(?im)\\bhere'?s how (?:it|this) works\\b"
+        - "(?im)\\bhere'?s the thing\\b"
+        - "(?im)\\bhere'?s why\\b"
+        - "(?im)\\bhere'?s what\\b"
+        - "(?im)\\bhere'?s the deal\\b"
+        - "(?im)\\blet me explain\\b"
+        - "(?im)\\blet'?s break (?:this|that|it) down\\b"
+        - "(?im)\\bhere'?s a quick (?:rundown|breakdown|overview)\\b"
+        - "(?im)\\bвот как (?:это|оно) работает\\b"
+        - "(?im)\\bдавайте разберём\\b"
+        - "(?im)\\bпозвольте объяснить\\b"
+    source: "anti-ai-guide,humanizer"
+
+  - id: negative_parallelism
+    description: "Negative-parallel construction: 'It's not X, it's Y' / 'I don't think X — it's Y'."
+    severity: medium
+    detection:
+      type: regex_present
+      patterns:
+        - "(?im)\\bit'?s not\\b[^.\\n]{0,80}[—–-]\\s*it'?s\\b"
+        - "(?im)\\bnot just\\b[^,.\\n]{0,40},\\s*but\\b"
+        - "(?im)\\bi don'?t think it'?s\\b[^.\\n]{0,80}[—–-]\\s*it'?s\\b"
+        - "(?im)\\bthis isn'?t (?:about|just)\\b[^.\\n]{0,80}\\bit'?s (?:about|really)\\b"
+        - "(?im)это не\\b[^.\\n]{0,80}[—–-]\\s*это"
+        - "(?im)не просто\\b[^,.\\n]{0,40},\\s*а\\b"
+    source: "wikipedia,humanizer"
+
+  - id: reverse_engagement_close
+    description: "Closing the post with a generic question to the reader."
+    severity: medium
+    detection:
+      type: regex_in_last_sentence
+      patterns:
+        - "^(?:Do you|Have you|What'?s your|What do you think|What about|How do you|How would you|Would you|Are you|Are we|Should we|Could we|Aren'?t we|Have we)"
+        - "^(?:А вы|Что вы (?:думаете|об этом|скажете)|Как вы|А что вы)"
+    source: "humanizer"
+
+  - id: parallel_bullet_list
+    description: "Three or more bullet items with parallel openings (e.g. 'Default state:' / 'Hover state:' / 'Dark mode:')."
+    severity: medium
+    detection:
+      type: parallel_bullets
+      min_items: 3
+    source: "anti-ai-guide"

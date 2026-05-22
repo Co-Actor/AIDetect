@@ -1,0 +1,39 @@
+name: aidetect
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      AIDETECT_INTERNAL_TOKEN: ${AIDETECT_INTERNAL_TOKEN:-dev-token-change-me}
+      ENVIRONMENT: development
+      API_PORT: "8010"
+    command: ["uvicorn", "aidetect.main:app", "--host", "0.0.0.0", "--port", "8010"]
+    ports:
+      - "8010:8010"
+    volumes:
+      - ./backend/src:/app/src:ro
+      - ./backend/data:/app/data
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "9000:80"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8010

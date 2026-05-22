@@ -1,0 +1,10 @@
+{
+  "source": "coactor:m9>=0.8",
+  "samples": 267,
+  "stats": {
+    "with_quality": 369,
+    "weak_human": 324,
+    "weak_ai": 5,
+    "total": 1158
+  }
+}

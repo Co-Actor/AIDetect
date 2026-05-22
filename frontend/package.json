@@ -1,0 +1,38 @@
+{
+  "name": "aidetect-frontend",
+  "version": "0.1.0",
+  "description": "AIDetect - AI Content Detection Frontend",
+  "productName": "AIDetect",
+  "author": "AIDetect Team",
+  "private": true,
+  "scripts": {
+    "dev": "quasar dev",
+    "build": "quasar build",
+    "lint": "eslint --ext .js,.ts,.vue ./src",
+    "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md}\""
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.16.12",
+    "@vueuse/core": "^10.11.0",
+    "axios": "^1.7.2",
+    "pinia": "^2.1.7",
+    "quasar": "^2.16.0",
+    "vue": "^3.4.29",
+    "vue-router": "^4.3.3"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^2.0.0",
+    "@types/node": "^20.14.5",
+    "@typescript-eslint/eslint-plugin": "^7.14.1",
+    "@typescript-eslint/parser": "^7.14.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.27.0",
+    "prettier": "^3.3.2",
+    "typescript": "^5.5.2",
+    "vite": "^5.3.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  }
+}

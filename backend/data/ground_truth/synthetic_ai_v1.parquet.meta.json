@@ -1,0 +1,24 @@
+{
+  "models": [
+    "anthropic/claude-sonnet-4-6",
+    "openai/gpt-4o",
+    "google/gemini-2.5-flash",
+    "meta-llama/llama-3.3-70b-instruct"
+  ],
+  "languages": [
+    "en",
+    "ru"
+  ],
+  "variants": 1,
+  "samples": 60,
+  "by_language": {
+    "en": 40,
+    "ru": 20
+  },
+  "by_model": {
+    "synth:openai/gpt-4o": 15,
+    "synth:google/gemini-2.5-flash": 15,
+    "synth:meta-llama/llama-3.3-70b-instruct": 15,
+    "synth:anthropic/claude-sonnet-4-6": 15
+  }
+}

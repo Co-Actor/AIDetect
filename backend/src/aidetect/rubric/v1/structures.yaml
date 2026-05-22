@@ -1,0 +1,21 @@
+# Structural anti-patterns. Phase 1: detector for each.
+version: "v1"
+structures:
+  - id: mirror_opening
+    description: "First sentence restates the topic instead of opening with scene/number/tension."
+    severity: high
+  - id: three_point_sermon
+    description: "Intro + three points + conclusion that summarizes all three."
+    severity: medium
+  - id: bookend_summary
+    description: "Closing paragraph restates everything just said."
+    severity: medium
+  - id: balanced_both_sides_hedge
+    description: "While there are challenges, there are also opportunities."
+    severity: low
+  - id: question_then_answer
+    description: "Asks a question and answers in back-to-back lines."
+    severity: low
+  - id: ascending_excitement
+    description: "Bullet points always escalate: First... Second... And most importantly."
+    severity: low

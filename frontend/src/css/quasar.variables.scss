@@ -1,0 +1,14 @@
+// Atelier (multi-hue) palette — see ai-detector/chats/chat1.md.
+// Paper #F8F8F4, indigo high, coral medium, sage low.
+
+$primary:   #3A3FB5;  // accent — indigo (CTA, large numbers, high severity)
+$secondary: #48A079;  // sage — low severity / supportive
+$accent:    #E76F4A;  // coral — medium severity
+
+$dark:      #141414;  // ink
+$dark-page: #141414;
+
+$positive:  #48A079;  // sage
+$negative:  #3A3FB5;  // we treat "AI-detected" as the indigo accent, not a red alert
+$info:      #3A3FB5;
+$warning:   #E76F4A;
