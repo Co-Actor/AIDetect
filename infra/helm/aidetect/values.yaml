@@ -17,11 +17,12 @@ azure:
 
 # Image registry — overridden per env via --set image.registry / image.tag
 image:
-  registry: "ghcr.io/co-actor"
+  registry: "publoraacrdev.azurecr.io"
   pullPolicy: Always
   tag: "dev-latest"
-  # Name of an existing imagePullSecret in the namespace if the GHCR packages are private.
-  # Leave empty when packages are public.
+  # Set to a docker-registry secret name only if pulling from a registry that the
+  # AKS kubelet identity does NOT have access to. For publoraacrdev (attached to AKS)
+  # leave empty — AcrPull on the kubelet identity is enough.
   pullSecretName: ""
 
 # Common pod placement (default nodepool, shared dev namespace)

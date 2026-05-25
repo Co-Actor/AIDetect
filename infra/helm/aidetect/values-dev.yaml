@@ -7,9 +7,9 @@ azure:
   keyVaultName: "kv-aidetect-dev"
 
 image:
-  registry: "ghcr.io/co-actor"
+  registry: "publoraacrdev.azurecr.io"
   pullPolicy: Always
-  pullSecretName: ""  # set to a docker-registry secret name if GHCR packages are private
+  pullSecretName: ""  # AKS kubelet has AcrPull on publoraacrdev, no secret needed
 
 ingress:
   enabled: true
