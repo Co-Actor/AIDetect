@@ -1,24 +1,24 @@
 # AIDetect — Project Context for Claude Code
 
-> Этот файл — project-scoped CLAUDE.md для AIDetect. Загружается в любой сессии,
-> которая стартует внутри `/Users/nicksonet/myproject/memory/AIDetect/`. Дополняет
-> глобальный `/Users/nicksonet/myproject/CLAUDE.md` и переопределяет его там, где
-> правила различаются (например, Python 3.12 вместо 3.11).
+> Project-scoped CLAUDE.md for AIDetect. Loaded in any session that starts inside
+> `/Users/nicksonet/myproject/memory/AIDetect/`. Extends the parent
+> `/Users/nicksonet/myproject/CLAUDE.md` and overrides it where rules differ
+> (e.g. Python 3.12 instead of 3.11).
 
-## 1. Что за проект
+## 1. What this project is
 
-**AIDetect** — multi-signal AI text detector. Гибридный скоринг: три независимых
-сигнальных слоя кормят калиброванный агрегатор.
+**AIDetect** — multi-signal AI text detector. Hybrid scoring: three independent
+signal layers feed a calibrated aggregator.
 
-| Layer | Что делает | Latency | Источник |
+| Layer | What it does | Latency | Source |
 |---|---|---|---|
 | **A. Statistical** | burstiness, type-token ratio, sentence-CV, formatting density | ~5 ms (sync) | backend / `services/` |
 | **B. Pattern matching** | banned phrases, structural patterns, formatting habits | ~10 ms (sync) | `backend/src/aidetect/rubric/v1/` |
-| **C. LLM-as-judge** | rubric-based scoring через OpenRouter (по умолчанию `claude-haiku-4-5`) | 1–3 s (async) | OpenRouter API |
+| **C. LLM-as-judge** | rubric-based scoring via OpenRouter (default `claude-haiku-4-5`) | 1–3 s (async) | OpenRouter API |
 
-Веса агрегатора калибруются на ground-truth датасете (Co.Actor live posts + synthetic AI + public benchmarks).
+Aggregator weights are calibrated on a ground-truth dataset (Co.Actor live posts + synthetic AI + public benchmarks).
 
-**Working title — публичное имя пока не выбрано.** Статус: Phase 0 (skeleton), Phase 1 (MVP) в работе.
+**Working title — public name not chosen yet.** Status: Phase 0 (skeleton), Phase 1 (MVP) in progress.
 
 ## 2. Layout
 
@@ -49,8 +49,7 @@ AIDetect/
 │   │   ├── values.yaml       # defaults
 │   │   ├── values-dev.yaml   # dev overrides
 │   │   └── templates/
-│   ├── scripts/              # idempotent bootstrap (01..04)
-│   └── README.md             # Azure deploy guide
+│   └── README.md             # Azure deploy guide (copy-paste bootstrap)
 ├── .github/workflows/
 │   └── deploy-dev.yml        # CI/CD — fires on push to development branch
 ├── docker-compose.yml        # local dev (backend + frontend + redis)
@@ -60,136 +59,136 @@ AIDetect/
 
 ## 3. Local development
 
-| Команда | Что делает |
+| Command | What it does |
 |---|---|
-| `make install` | `uv sync` для backend + `pnpm install` для frontend |
-| `make backend` | uvicorn dev server на http://localhost:8010 |
-| `make frontend` | Quasar dev server на http://localhost:9000 |
-| `make redis-up` | Redis в docker-compose на port 6380 |
-| `make test` | `pytest` для backend |
-| `make lint` | ruff + mypy для backend, eslint для frontend |
-| `docker compose up --build` | весь стек локально (backend + frontend + redis) |
+| `make install` | `uv sync` for backend + `pnpm install` for frontend |
+| `make backend` | uvicorn dev server at http://localhost:8010 |
+| `make frontend` | Quasar dev server at http://localhost:9000 |
+| `make redis-up` | Redis in docker-compose on port 6380 |
+| `make test` | `pytest` for backend |
+| `make lint` | ruff + mypy for backend, eslint for frontend |
+| `docker compose up --build` | full local stack (backend + frontend + redis) |
 
-**Default ports:** backend `8010`, frontend `9000`, redis `6380` (in-memory fallback если Redis не запущен).
+**Default ports:** backend `8010`, frontend `9000`, redis `6380` (in-memory fallback if Redis is unreachable).
 
 ## 4. Tooling / language
 
-- **Python 3.12** для backend (требование `pyproject.toml`, **переопределяет** правило Python 3.11 из родительского CLAUDE.md).
-- **Node 20** для frontend (см. Dockerfile).
-- **uv** для Python зависимостей.
-- **pnpm** для Node зависимостей (с npm fallback).
-- **Black/isort/flake8** заменяем на **ruff** (см. `[tool.ruff]` в `pyproject.toml`).
-- **mypy strict** для backend.
-- Коммуникация с пользователем — на русском. Код и комментарии — на английском (правило из родительского CLAUDE.md).
+- **Python 3.12** for backend (`pyproject.toml` requirement — **overrides** the Python 3.11 rule from the parent CLAUDE.md).
+- **Node 20** for frontend (see Dockerfile).
+- **uv** for Python dependencies.
+- **pnpm** for Node dependencies (npm fallback).
+- **Black/isort/flake8** are replaced by **ruff** (see `[tool.ruff]` in `pyproject.toml`).
+- **mypy strict** for backend.
+- User-facing communication — in Russian. Code and comments — in English (rule from the parent CLAUDE.md).
 
 ## 5. Deployment pipeline
 
-### Где что
-- **Ветка для dev-деплоя:** `development`
+### Where things live
+- **Dev deploy branch:** `development`
 - **Workflow:** `.github/workflows/deploy-dev.yml`
 - **Registry:** GHCR — `ghcr.io/co-actor/aidetect-backend:<sha>`, `ghcr.io/co-actor/aidetect-frontend:<sha>`
-- **Auth:** GitHub Actions → `GITHUB_TOKEN` для GHCR push, Azure OIDC federated identity для `az aks get-credentials`
-- **Target:** AKS cluster `aks-memory-actor` (eastus2), namespace `dev` (shared с другими сервисами Co.Actor)
+- **Auth:** GitHub Actions → `GITHUB_TOKEN` for GHCR push, Azure OIDC federated identity for `az aks get-credentials`
+- **Target:** AKS cluster `aks-memory-actor` (eastus2), namespace `dev` (shared with other Co.Actor services)
 - **Helm release name:** `aidetect-dev`
 - **Resources:** Deployments `aidetect-dev-backend`, `aidetect-dev-frontend` + Services + Ingress
 - **Domains:** `aidetect.co.actor` (frontend) + `apiaidetect.co.actor` (backend API)
 - **TLS:** cert-manager + `letsencrypt-prod` ClusterIssuer, secret `aidetect-dev-tls`
 - **Secrets:** Azure Key Vault `kv-aidetect-dev` → CSI driver → Opaque secret `aidetect-dev-backend-env`
 
-### Pipeline jobs (последовательно)
-1. `detect-changes` — `dorny/paths-filter` определяет какие сервисы изменились (`backend/`, `frontend/`).
-2. `build-and-push` (matrix: backend, frontend) — `docker/build-push-action` пушит образы в GHCR с тегами `<sha>` + `dev-latest`.
-3. `deploy` — `az aks get-credentials` → `helm upgrade --install aidetect-dev` с подстановкой `image.tag=<sha>`, `image.registry`, `azure.backendUamiClientId`, hosts. `kubectl rollout status` ждёт оба deployment.
+### Pipeline jobs (sequential)
+1. `detect-changes` — `dorny/paths-filter` detects which services changed (`backend/`, `frontend/`).
+2. `build-and-push` (matrix: backend, frontend) — `docker/build-push-action` pushes images to GHCR with tags `<sha>` + `dev-latest`.
+3. `deploy` — `az aks get-credentials` → `helm upgrade --install aidetect-dev` with overrides `image.tag=<sha>`, `image.registry`, `azure.backendUamiClientId`, hosts. `kubectl rollout status` waits for both deployments.
 
-Ручной запуск: Actions → Deploy to AKS (development) → Run workflow.
+Manual trigger: Actions → Deploy to AKS (development) → Run workflow.
 
-## 6. ⚠️ MANDATORY: проверять деплой и пайплайн через `gh`
+## 6. ⚠️ MANDATORY: verify deploy and pipeline via `gh`
 
-**После КАЖДОГО `git push origin development` (или ручного запуска workflow):**
+**After EVERY `git push origin development` (or manual workflow trigger):**
 
 ```bash
-# 1) Найти ID последнего запуска workflow
+# 1) Find the latest workflow run ID
 gh run list --workflow=deploy-dev.yml --limit 5
 
-# 2) Проследить за конкретным запуском в реальном времени
+# 2) Watch a specific run in real time
 gh run watch <run-id>
 
-# 3) Посмотреть детали запуска (jobs, статусы)
+# 3) Inspect run details (jobs, statuses)
 gh run view <run-id>
 
-# 4) Если упало — логи только провалившихся шагов
+# 4) On failure — logs from failed steps only
 gh run view <run-id> --log-failed
 
-# 5) Полные логи всего запуска
+# 5) Full logs of the entire run
 gh run view <run-id> --log
 ```
 
-**Шорткаты:**
+**Shortcuts:**
 ```bash
-# Последний запуск на текущей ветке
+# Latest run on the current branch
 gh run list --branch development --limit 1
-gh run view --log-failed  # без id берёт последний
+gh run view --log-failed  # without an id, uses the latest run
 
-# Перезапустить упавший
+# Rerun a failed run
 gh run rerun <run-id>
-gh run rerun <run-id> --failed   # только упавшие jobs
+gh run rerun <run-id> --failed   # only failed jobs
 
-# Ручной запуск (workflow_dispatch)
+# Manual trigger (workflow_dispatch)
 gh workflow run deploy-dev.yml --ref development -f services=all
 ```
 
-**Правило:** «push прошёл» ≠ «деплой прошёл». Push успешен — это лишь то, что Git принял коммит. Реальная проверка — `gh run view` показывает все 3 job'а зелёными И `kubectl rollout status` в smoke-check прошёл. Без `gh` подтверждения **деплой не считается завершённым**.
+**Rule:** "push succeeded" ≠ "deploy succeeded". A successful push only means Git accepted the commit. Real verification is `gh run view` showing all 3 jobs green AND the `kubectl rollout status` smoke-check passing. Without `gh` confirmation, **the deploy is not considered complete**.
 
 ## 7. Azure infrastructure (already bootstrapped or pending)
 
-| Ресурс | Имя | Назначение |
+| Resource | Name | Purpose |
 |---|---|---|
-| AKS cluster | `aks-memory-actor` | Shared cluster в RG `DefaultResourceGroup-EUS`, eastus2 |
-| Namespace | `dev` | Shared с другими Co.Actor dev сервисами |
-| Key Vault | `kv-aidetect-dev` | Runtime secrets для backend |
-| Azure Cache for Redis | `redis-aidetect-dev` | Basic C0, TLS port 6380, схема `rediss://` |
-| UAMI (CI) | `id-aidetect-development-deploy` | OIDC federated с GH Actions, role: AKS Cluster User |
-| UAMI (backend) | `id-aidetect-development-backend` | OIDC federated с K8s SA, role: KV Secrets User |
+| AKS cluster | `aks-memory-actor` | Shared cluster in RG `DefaultResourceGroup-EUS`, eastus2 |
+| Namespace | `dev` | Shared with other Co.Actor dev services |
+| Key Vault | `kv-aidetect-dev` | Runtime secrets for backend |
+| Azure Cache for Redis | `redis-aidetect-dev` | Basic C0, TLS port 6380, scheme `rediss://` |
+| UAMI (CI) | `id-aidetect-development-deploy` | OIDC federated with GH Actions, role: AKS Cluster User |
+| UAMI (backend) | `id-aidetect-development-backend` | OIDC federated with K8s SA, role: KV Secrets User |
 | Ingress controller | `ingress-nginx` (shared) | LB IP `52.254.109.26` |
-| ClusterIssuer | `letsencrypt-prod` (shared) | Cert-manager автоматически выписывает TLS |
+| ClusterIssuer | `letsencrypt-prod` (shared) | cert-manager issues TLS automatically |
 
 **Subscription:** `Basic` (`71ddbd6b-dfbd-4293-bfbd-155afd7b518d`), tenant `126403ee-2465-4019-8431-5a17899b6774`.
 
 ## 8. Bootstrap (`infra/README.md`)
 
-Bootstrap-команды лежат в `infra/README.md` (§1–§7) — copy-paste az/kubectl/gh блоки. Прогоняются один раз при создании среды.
+Bootstrap commands live in `infra/README.md` (§1–§7) — copy-paste az/kubectl/gh blocks. Run once when setting up the environment.
 
-После прогона остаётся вручную:
-- DNS A-записи: `aidetect.co.actor` + `apiaidetect.co.actor` → `52.254.109.26`
-- Сделать GHCR пакеты public (Settings → Packages) или передать `GHCR_PULL_SECRET_NAME`
+Steps left to do manually after the README has been run through:
+- DNS A records: `aidetect.co.actor` + `apiaidetect.co.actor` → `52.254.109.26`
+- Make GHCR packages public (Settings → Packages) or set `GHCR_PULL_SECRET_NAME`
 
 ## 9. Secrets and config
 
 ### Backend env (config.py)
-| Variable | Где живёт в проде | Обязательно |
+| Variable | Where it lives in prod | Required |
 |---|---|---|
-| `AIDETECT_INTERNAL_TOKEN` | KV → CSI mount → envFrom | да (≥8 chars, валидируется Pydantic) |
-| `OPENROUTER_API_KEY` | KV → CSI mount → envFrom | да (без него Layer C падает) |
-| `REDIS_URL` | KV (Azure Cache for Redis TLS URL) | опционально (in-memory fallback) |
-| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | KV (добавляется когда Langfuse развёрнут) | опционально (`LANGFUSE_ENABLED=0` по умолчанию) |
-| `COACTOR_DATABASE_URL` | не используется в runtime API | только для offline ground-truth скриптов |
+| `AIDETECT_INTERNAL_TOKEN` | KV → CSI mount → envFrom | yes (≥8 chars, validated by Pydantic) |
+| `OPENROUTER_API_KEY` | KV → CSI mount → envFrom | yes (Layer C fails without it) |
+| `REDIS_URL` | KV (Azure Cache for Redis TLS URL) | optional (in-memory fallback) |
+| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | KV (added when Langfuse is deployed) | optional (`LANGFUSE_ENABLED=0` by default) |
+| `COACTOR_DATABASE_URL` | not used at runtime | only for offline ground-truth scripts |
 
-### Helm chart inputs (override via `--set` в workflow)
-- `image.registry`, `image.tag` — registry/SHA
-- `image.pullSecretName` — пусто если пакеты public, иначе имя docker-registry secret
-- `azure.backendUamiClientId` — UAMI clientId для backend SA workload identity
-- `ingress.hosts.api`, `ingress.hosts.app` — хосты
+### Helm chart inputs (overridden via `--set` in workflow)
+- `image.registry`, `image.tag` — registry / SHA
+- `image.pullSecretName` — empty if packages are public, otherwise a docker-registry secret name
+- `azure.backendUamiClientId` — UAMI clientId for backend SA workload identity
+- `ingress.hosts.api`, `ingress.hosts.app` — hosts
 
 ## 10. Operational rules (project-specific)
 
-- **Минимальный диff** — правило из родительского CLAUDE.md. Никаких лишних рефакторингов в bugfix-PR.
-- **Никаких bullet-point коммитов**, никаких "Generated with Claude" / Co-Authored-By подписей. Одна короткая строка.
-- **Перед PR на main:** локально `cd backend && uv run pytest && uv run ruff check . && uv run mypy src` + `cd frontend && pnpm build && pnpm lint`.
-- **Каждое изменение бэкенда требует теста.** Если фикс — обязательно регрессионный тест.
-- **DB migrations** (если появятся) — нумерованные файлы `backend/migrations/NNN_*.up.sql` + `*.down.sql`. Никаких ad-hoc SQL.
-- **Optional integrations** (Langfuse сейчас, Stripe/OAuth/Sentry в будущем) MUST be no-op когда env vars пустые.
-- **Никогда не мерджи в `main` с красными тестами.** Никогда не отключай тест чтобы "пройти CI".
+- **Minimal diff** — rule from the parent CLAUDE.md. No incidental refactors in a bug-fix PR.
+- **No bullet-point commit messages**, no "Generated with Claude" / Co-Authored-By trailers. One short line.
+- **Before opening a PR to main:** locally `cd backend && uv run pytest && uv run ruff check . && uv run mypy src` + `cd frontend && pnpm build && pnpm lint`.
+- **Every backend change ships a test.** Bug fixes must include a regression test.
+- **DB migrations** (if any get introduced) — numbered files `backend/migrations/NNN_*.up.sql` + `*.down.sql`. No ad-hoc SQL.
+- **Optional integrations** (Langfuse today, Stripe/OAuth/Sentry later) MUST be no-op when their env vars are empty.
+- **Never merge to `main` with red tests.** Never disable a test "to make CI pass".
 
 ## 11. Sessions log
 
-Решения по этой сессии (организация деплоя): `.claude/sessions/2026-05-25_aks-helm-deploy-setup.md` (если включена практика session log из родительского CLAUDE.md). Этот файл фиксирует только повторяемые факты о проекте — текущее состояние работы хранится в git.
+Decisions made in this session (deploy setup) live in `.claude/sessions/2026-05-25_aks-helm-deploy-setup.md` (if the session-log practice from the parent CLAUDE.md is enabled). This file captures repeatable facts about the project only — current work state lives in git.
