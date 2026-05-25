@@ -31,6 +31,37 @@ External (existing on cluster, untouched):
 
 Шаги ниже — **разовый bootstrap**. После настройки push в `development` сам деплоит через GitHub Actions.
 
+## ⚡ Быстрый путь — через скрипты
+
+В `infra/scripts/` лежат идемпотентные скрипты, которые автоматизируют шаги §1–§4 этого README:
+
+```bash
+# 1. Создаёт KV + Redis + 2 UAMI + federated creds + role assignments.
+#    Печатает значения для следующих шагов.
+bash infra/scripts/01-bootstrap-azure.sh
+
+# 2. Применяет in-cluster Role + RoleBinding для CI principal
+#    (id берётся из вывода предыдущего шага).
+bash infra/scripts/02-setup-cluster-rbac.sh <CI_PRINCIPAL_ID>
+
+# 3. Заливает 3 секрета в KV (REDIS_URL, OPENROUTER_API_KEY, AIDETECT_INTERNAL_TOKEN).
+#    Принимает REDIS_URL первым аргументом или спросит интерактивно.
+bash infra/scripts/03-import-secrets.sh "<REDIS_URL>"
+
+# 4. Создаёт GitHub environment 'development' и 12 переменных через gh CLI.
+bash infra/scripts/04-setup-github-vars.sh <AZURE_CLIENT_ID> <BACKEND_UAMI_CLIENT_ID>
+```
+
+После прогона остаётся только:
+- настроить DNS (см. §7)
+- сделать GHCR пакеты public после первого build (см. §5)
+- push в `development` запустит первый деплой
+
+Langfuse-сервер разворачивается отдельно — когда будут готовы ключи, см. инструкцию в выводе `03-import-secrets.sh`.
+
+Дальше — раскрытие что делает каждый скрипт под капотом, если нужно ручное управление.
+
+
 ## Уже есть на кластере
 
 - ✅ AKS `aks-memory-actor` с OIDC issuer + Workload Identity
@@ -221,15 +252,13 @@ kubectl create secret docker-registry ghcr-pull-secret \
 
 ### 6. Импортировать секреты в Key Vault
 
-Backend ожидает 5 ключей (см. `infra/helm/aidetect/values.yaml` → `backend.secretEnvKeys`):
+Backend ожидает 3 обязательных ключа (см. `infra/helm/aidetect/values.yaml` → `backend.secretEnvKeys`):
 
 | Helm key | KV secret name | Описание |
 |---|---|---|
 | `OPENROUTER_API_KEY` | `aidetect-dev-backend-OPENROUTER-API-KEY` | OpenRouter API key для LLM-as-judge |
-| `AIDETECT_INTERNAL_TOKEN` | `aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN` | Internal API token (≥8 chars) |
+| `AIDETECT_INTERNAL_TOKEN` | `aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN` | Internal API token (≥8 chars; скрипт сгенерирует, если оставить пустым) |
 | `REDIS_URL` | `aidetect-dev-backend-REDIS-URL` | TLS URL Azure Cache for Redis: `rediss://:<key>@<host>:6380/0` |
-| `LANGFUSE_PUBLIC_KEY` | `aidetect-dev-backend-LANGFUSE-PUBLIC-KEY` | Langfuse public key (https://cloud.langfuse.com → Settings → API Keys) |
-| `LANGFUSE_SECRET_KEY` | `aidetect-dev-backend-LANGFUSE-SECRET-KEY` | Langfuse secret key |
 
 Имя секрета в KV = `aidetect-dev-backend-<KEY-WITH-HYPHENS>`. Запись:
 
@@ -238,9 +267,12 @@ KV="kv-aidetect-dev"
 az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-OPENROUTER-API-KEY --value '<openrouter-api-key>'
 az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN --value '<internal-token>'
 az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-REDIS-URL --value "$REDIS_URL"   # из шага §1
-az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-LANGFUSE-PUBLIC-KEY --value '<langfuse-public-key>'
-az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-LANGFUSE-SECRET-KEY --value '<langfuse-secret-key>'
 ```
+
+Langfuse keys добавляются позже, когда Langfuse-сервер развёрнут отдельно:
+1. `az keyvault secret set` для `LANGFUSE_PUBLIC_KEY` и `LANGFUSE_SECRET_KEY`
+2. Добавить эти keys в `backend.secretEnvKeys` в `values.yaml`
+3. Поменять `LANGFUSE_ENABLED` в `backend.env` на `"1"`
 
 Проверка:
 ```bash
