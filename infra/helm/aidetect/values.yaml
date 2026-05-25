@@ -39,12 +39,14 @@ backend:
   env:
     ENVIRONMENT: "development"
     API_PORT: "8010"
+    LANGFUSE_ENABLED: "1"
   # CSI-mounted secrets (Key Vault → secret-backend-env)
   secretEnvKeys:
     - OPENROUTER_API_KEY
     - AIDETECT_INTERNAL_TOKEN
     - REDIS_URL
-    - OPENAI_API_KEY
+    - LANGFUSE_PUBLIC_KEY
+    - LANGFUSE_SECRET_KEY
   resources:
     requests:
       cpu: 100m

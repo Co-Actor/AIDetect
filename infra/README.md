@@ -41,19 +41,33 @@ External (existing on cluster, untouched):
 
 ## Что нужно сделать один раз
 
-### 1. Создать Key Vault
+### 1. Создать Key Vault + Azure Cache for Redis
 
 ```bash
 SUB="71ddbd6b-dfbd-4293-bfbd-155afd7b518d"
 RG="DefaultResourceGroup-EUS"
 LOC="eastus2"
 KV="kv-aidetect-dev"
+REDIS="redis-aidetect-dev"
 
 az account set --subscription "$SUB"
 
+# Key Vault (RBAC mode)
 az keyvault show -n "$KV" >/dev/null 2>&1 || \
   az keyvault create -n "$KV" -g "$RG" -l "$LOC" --enable-rbac-authorization true -o none
+
+# Azure Cache for Redis — Basic C0 (250 MB, ~$16/mo). Создание занимает ~15–20 минут.
+az redis show -n "$REDIS" -g "$RG" >/dev/null 2>&1 || \
+  az redis create -n "$REDIS" -g "$RG" -l "$LOC" --sku Basic --vm-size c0 -o none
+
+# Получить hostname и primary key
+REDIS_HOST=$(az redis show -n "$REDIS" -g "$RG" --query hostName -o tsv)
+REDIS_KEY=$(az redis list-keys -n "$REDIS" -g "$RG" --query primaryKey -o tsv)
+REDIS_URL="rediss://:${REDIS_KEY}@${REDIS_HOST}:6380/0"
+echo "REDIS_URL = $REDIS_URL"
 ```
+
+Важно: Azure Cache for Redis по умолчанию слушает TLS-порт `6380` со схемой `rediss://`. Plain `6379` отключён — backend подключится по TLS автоматически (redis-py поддерживает `rediss://`).
 
 ### 2. Создать identities + federated credentials
 
@@ -207,14 +221,15 @@ kubectl create secret docker-registry ghcr-pull-secret \
 
 ### 6. Импортировать секреты в Key Vault
 
-Backend ожидает 4 ключа (см. `infra/helm/aidetect/values.yaml` → `backend.secretEnvKeys`):
+Backend ожидает 5 ключей (см. `infra/helm/aidetect/values.yaml` → `backend.secretEnvKeys`):
 
 | Helm key | KV secret name | Описание |
 |---|---|---|
 | `OPENROUTER_API_KEY` | `aidetect-dev-backend-OPENROUTER-API-KEY` | OpenRouter API key для LLM-as-judge |
-| `AIDETECT_INTERNAL_TOKEN` | `aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN` | Internal API token |
-| `REDIS_URL` | `aidetect-dev-backend-REDIS-URL` | `redis://host:6379/0` (managed Redis) |
-| `OPENAI_API_KEY` | `aidetect-dev-backend-OPENAI-API-KEY` | OpenAI API key (опционально) |
+| `AIDETECT_INTERNAL_TOKEN` | `aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN` | Internal API token (≥8 chars) |
+| `REDIS_URL` | `aidetect-dev-backend-REDIS-URL` | TLS URL Azure Cache for Redis: `rediss://:<key>@<host>:6380/0` |
+| `LANGFUSE_PUBLIC_KEY` | `aidetect-dev-backend-LANGFUSE-PUBLIC-KEY` | Langfuse public key (https://cloud.langfuse.com → Settings → API Keys) |
+| `LANGFUSE_SECRET_KEY` | `aidetect-dev-backend-LANGFUSE-SECRET-KEY` | Langfuse secret key |
 
 Имя секрета в KV = `aidetect-dev-backend-<KEY-WITH-HYPHENS>`. Запись:
 
@@ -222,8 +237,9 @@ Backend ожидает 4 ключа (см. `infra/helm/aidetect/values.yaml` →
 KV="kv-aidetect-dev"
 az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-OPENROUTER-API-KEY --value '<openrouter-api-key>'
 az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN --value '<internal-token>'
-az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-REDIS-URL --value '<redis-url>'
-az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-OPENAI-API-KEY --value '<openai-api-key>'
+az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-REDIS-URL --value "$REDIS_URL"   # из шага §1
+az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-LANGFUSE-PUBLIC-KEY --value '<langfuse-public-key>'
+az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-LANGFUSE-SECRET-KEY --value '<langfuse-secret-key>'
 ```
 
 Проверка:
@@ -354,8 +370,15 @@ az keyvault purge -n kv-aidetect-dev
 |---|---|
 | GHCR storage (private packages) | $0 (free tier для org) |
 | Key Vault (low ops) | <$1 |
+| Azure Cache for Redis Basic C0 (250 MB) | ~$16 |
 | Compute (shared nodepool) | $0 marginal |
 | Egress | <$5 |
-| **Total** | **~$5/mo** |
+| **Total** | **~$22/mo** |
 
-(AKS control plane уже оплачен; Redis — внешний, не часть стека; ACR не используем.)
+(AKS control plane уже оплачен; Langfuse cloud — free tier 50K events/мес; ACR не используем.)
+
+## Tear down Redis отдельно
+
+```bash
+az redis delete -n redis-aidetect-dev -g DefaultResourceGroup-EUS -y
+```
