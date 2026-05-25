@@ -95,9 +95,12 @@ jobs:
       - name: Build args (frontend only)
         if: (matrix.changed == 'true' || github.event_name == 'workflow_dispatch') && matrix.service == 'frontend'
         id: build_args
+        env:
+          VITE_DEFAULT_API_KEY: ${{ secrets.VITE_DEFAULT_API_KEY }}
         run: |
           echo "args<<EOF" >> $GITHUB_OUTPUT
           echo "VITE_API_BASE_URL=https://${API_HOST}" >> $GITHUB_OUTPUT
+          echo "VITE_DEFAULT_API_KEY=${VITE_DEFAULT_API_KEY}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Build and push image
