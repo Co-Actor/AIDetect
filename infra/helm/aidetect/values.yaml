@@ -97,5 +97,5 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
   hosts:
-    api: api.aidetect.co.actor
+    api: apiaidetect.co.actor
     app: aidetect.co.actor

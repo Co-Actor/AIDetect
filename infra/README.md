@@ -22,7 +22,7 @@ Azure subscription "Basic" (71ddbd6b-dfbd-4293-bfbd-155afd7b518d)
         ├── Deployment + Service: aidetect-dev-backend, aidetect-dev-frontend
         ├── SecretProviderClass: aidetect-dev-backend (CSI → KV → Opaque secret)
         ├── (optional) Secret ghcr-pull-secret  — only if GHCR package is private
-        └── Ingress: api.aidetect.co.actor, aidetect.co.actor
+        └── Ingress: apiaidetect.co.actor, aidetect.co.actor
 
 External (existing on cluster, untouched):
 ├── ingress-nginx (LB IP 52.254.109.26)
@@ -228,7 +228,7 @@ Repo `Co-Actor/AIDetect` → Settings → Environments → New environment `deve
 | `IMAGE_NAMESPACE` | `co-actor` (lowercase GitHub org/owner) |
 | `BACKEND_UAMI_CLIENT_ID` | backend runtime UAMI clientId |
 | `GHCR_PULL_SECRET_NAME` | `""` если пакеты публичные, иначе имя docker-registry секрета (см. §5) |
-| `API_HOST` | `api.aidetect.co.actor` |
+| `API_HOST` | `apiaidetect.co.actor` |
 | `APP_HOST` | `aidetect.co.actor` |
 
 ### 5. (Опционально) GHCR pull secret если пакеты приватные
@@ -288,7 +288,7 @@ LB IP кластера: **`52.254.109.26`** (shared ingress-nginx).
 В DNS-провайдере для `co.actor`:
 
 ```
-api.aidetect.co.actor   A   52.254.109.26
+apiaidetect.co.actor   A   52.254.109.26
 aidetect.co.actor       A   52.254.109.26
 ```
 
@@ -342,7 +342,7 @@ kubectl logs -n kube-system -l app=secrets-store-csi-driver -c secrets-store --t
 ```
 
 **TLS cert не выпускается**
-- `dig api.aidetect.co.actor` — резолвится в 52.254.109.26?
+- `dig apiaidetect.co.actor` — резолвится в 52.254.109.26?
 - `kubectl get certificate -n dev`
 - `kubectl describe certificate aidetect-dev-tls -n dev`
 

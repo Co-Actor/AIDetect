@@ -115,7 +115,7 @@ HELM_RELEASE            = $RELEASE
 IMAGE_NAMESPACE         = co-actor
 BACKEND_UAMI_CLIENT_ID  = $SVC_CLIENT
 GHCR_PULL_SECRET_NAME   = ""
-API_HOST                = api.aidetect.co.actor
+API_HOST                = apiaidetect.co.actor
 APP_HOST                = aidetect.co.actor
 
 ──── CI principal id (used by 02-setup-cluster-rbac.sh) ────
@@ -130,6 +130,6 @@ REDIS_URL               = $REDIS_URL
   3) Run:  bash infra/scripts/04-setup-github-vars.sh "$CI_CLIENT" "$SVC_CLIENT"
   4) Add DNS A records:
        aidetect.co.actor      A   52.254.109.26
-       api.aidetect.co.actor  A   52.254.109.26
+       apiaidetect.co.actor  A   52.254.109.26
   5) Push code on 'development' branch — workflow deploys automatically.
 EOF

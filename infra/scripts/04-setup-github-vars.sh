@@ -30,7 +30,7 @@ K8S_NAMESPACE="${K8S_NAMESPACE:-dev}"
 HELM_RELEASE="${HELM_RELEASE:-aidetect-dev}"
 IMAGE_NAMESPACE="${IMAGE_NAMESPACE:-co-actor}"
 GHCR_PULL_SECRET_NAME="${GHCR_PULL_SECRET_NAME:-}"
-API_HOST="${API_HOST:-api.aidetect.co.actor}"
+API_HOST="${API_HOST:-apiaidetect.co.actor}"
 APP_HOST="${APP_HOST:-aidetect.co.actor}"
 
 echo "==> Creating GitHub environment '$ENV' on $REPO (idempotent)"

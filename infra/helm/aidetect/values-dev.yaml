@@ -15,5 +15,5 @@ ingress:
   enabled: true
   tlsSecretName: aidetect-dev-tls
   hosts:
-    api: api.aidetect.co.actor
+    api: apiaidetect.co.actor
     app: aidetect.co.actor
