@@ -29,37 +29,7 @@ External (existing on cluster, untouched):
 └── cert-manager (ClusterIssuer letsencrypt-prod)
 ```
 
-Шаги ниже — **разовый bootstrap**. После настройки push в `development` сам деплоит через GitHub Actions.
-
-## ⚡ Быстрый путь — через скрипты
-
-В `infra/scripts/` лежат идемпотентные скрипты, которые автоматизируют шаги §1–§4 этого README:
-
-```bash
-# 1. Создаёт KV + Redis + 2 UAMI + federated creds + role assignments.
-#    Печатает значения для следующих шагов.
-bash infra/scripts/01-bootstrap-azure.sh
-
-# 2. Применяет in-cluster Role + RoleBinding для CI principal
-#    (id берётся из вывода предыдущего шага).
-bash infra/scripts/02-setup-cluster-rbac.sh <CI_PRINCIPAL_ID>
-
-# 3. Заливает 3 секрета в KV (REDIS_URL, OPENROUTER_API_KEY, AIDETECT_INTERNAL_TOKEN).
-#    Принимает REDIS_URL первым аргументом или спросит интерактивно.
-bash infra/scripts/03-import-secrets.sh "<REDIS_URL>"
-
-# 4. Создаёт GitHub environment 'development' и 12 переменных через gh CLI.
-bash infra/scripts/04-setup-github-vars.sh <AZURE_CLIENT_ID> <BACKEND_UAMI_CLIENT_ID>
-```
-
-После прогона остаётся только:
-- настроить DNS (см. §7)
-- сделать GHCR пакеты public после первого build (см. §5)
-- push в `development` запустит первый деплой
-
-Langfuse-сервер разворачивается отдельно — когда будут готовы ключи, см. инструкцию в выводе `03-import-secrets.sh`.
-
-Дальше — раскрытие что делает каждый скрипт под капотом, если нужно ручное управление.
+Шаги ниже — **разовый bootstrap**. После настройки push в `development` сам деплоит через GitHub Actions. Все команды идемпотентные — повторный запуск безопасен.
 
 
 ## Уже есть на кластере

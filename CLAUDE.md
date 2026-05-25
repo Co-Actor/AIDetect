@@ -155,16 +155,9 @@ gh workflow run deploy-dev.yml --ref development -f services=all
 
 **Subscription:** `Basic` (`71ddbd6b-dfbd-4293-bfbd-155afd7b518d`), tenant `126403ee-2465-4019-8431-5a17899b6774`.
 
-## 8. Bootstrap scripts (`infra/scripts/`)
+## 8. Bootstrap (`infra/README.md`)
 
-Идемпотентные, прогоняются в порядке:
-
-```bash
-bash infra/scripts/01-bootstrap-azure.sh         # KV + Redis + 2 UAMI + roles. ~20 мин (Redis долго).
-bash infra/scripts/02-setup-cluster-rbac.sh <CI_PRINCIPAL>
-bash infra/scripts/03-import-secrets.sh "<REDIS_URL>"
-bash infra/scripts/04-setup-github-vars.sh <AZURE_CLIENT_ID> <BACKEND_UAMI_CLIENT_ID>
-```
+Bootstrap-команды лежат в `infra/README.md` (§1–§7) — copy-paste az/kubectl/gh блоки. Прогоняются один раз при создании среды.
 
 После прогона остаётся вручную:
 - DNS A-записи: `aidetect.co.actor` + `apiaidetect.co.actor` → `52.254.109.26`
