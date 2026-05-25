@@ -220,10 +220,10 @@ Backend ожидает 4 ключа (см. `infra/helm/aidetect/values.yaml` →
 
 ```bash
 KV="kv-aidetect-dev"
-az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-OPENROUTER-API-KEY --value 'sk-or-...'
-az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN --value '...'
-az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-REDIS-URL --value 'redis://...'
-az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-OPENAI-API-KEY --value 'sk-...'
+az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-OPENROUTER-API-KEY --value '<openrouter-api-key>'
+az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN --value '<internal-token>'
+az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-REDIS-URL --value '<redis-url>'
+az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-OPENAI-API-KEY --value '<openai-api-key>'
 ```
 
 Проверка:
