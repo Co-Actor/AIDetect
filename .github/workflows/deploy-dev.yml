@@ -16,19 +16,22 @@ on:
         required: true
 
 permissions:
-  id-token: write
+  id-token: write     # for Azure OIDC login
   contents: read
+  packages: write     # for GHCR push
 
 env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ vars.IMAGE_NAMESPACE }}        # e.g. co-actor
   AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
   AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
   AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-  ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
   AKS_NAME: ${{ vars.AKS_NAME }}
   AKS_RESOURCE_GROUP: ${{ vars.AKS_RESOURCE_GROUP }}
   K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
   HELM_RELEASE: ${{ vars.HELM_RELEASE }}
   BACKEND_UAMI_CLIENT_ID: ${{ vars.BACKEND_UAMI_CLIENT_ID }}
+  GHCR_PULL_SECRET_NAME: ${{ vars.GHCR_PULL_SECRET_NAME }}   # empty if packages are public
   API_HOST: ${{ vars.API_HOST }}
   APP_HOST: ${{ vars.APP_HOST }}
 
@@ -59,10 +62,12 @@ jobs:
       matrix:
         include:
           - service: backend
+            image: aidetect-backend
             context: ./backend
             dockerfile: ./backend/Dockerfile
             changed: ${{ needs.detect-changes.outputs.backend }}
           - service: frontend
+            image: aidetect-frontend
             context: ./frontend
             dockerfile: ./frontend/Dockerfile
             changed: ${{ needs.detect-changes.outputs.frontend }}
@@ -74,17 +79,13 @@ jobs:
       - uses: actions/checkout@v4
         if: matrix.changed == 'true' || github.event_name == 'workflow_dispatch'
 
-      - name: Azure login (OIDC)
+      - name: GHCR login
         if: matrix.changed == 'true' || github.event_name == 'workflow_dispatch'
-        uses: azure/login@v2
+        uses: docker/login-action@v3
         with:
-          client-id: ${{ env.AZURE_CLIENT_ID }}
-          tenant-id: ${{ env.AZURE_TENANT_ID }}
-          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
-
-      - name: ACR login
-        if: matrix.changed == 'true' || github.event_name == 'workflow_dispatch'
-        run: az acr login --name ${{ env.ACR_LOGIN_SERVER }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         if: matrix.changed == 'true' || github.event_name == 'workflow_dispatch'
@@ -106,11 +107,11 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            ${{ env.ACR_LOGIN_SERVER }}/${{ matrix.service }}:${{ github.sha }}
-            ${{ env.ACR_LOGIN_SERVER }}/${{ matrix.service }}:dev-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}:dev-latest
           build-args: ${{ steps.build_args.outputs.args }}
-          cache-from: type=registry,ref=${{ env.ACR_LOGIN_SERVER }}/${{ matrix.service }}:buildcache
-          cache-to: type=registry,ref=${{ env.ACR_LOGIN_SERVER }}/${{ matrix.service }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}:buildcache,mode=max
 
   deploy:
     needs: [detect-changes, build-and-push]
@@ -140,8 +141,9 @@ jobs:
             ./infra/helm/aidetect \
             --namespace ${{ env.K8S_NAMESPACE }} \
             -f ./infra/helm/aidetect/values-dev.yaml \
+            --set image.registry=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }} \
             --set image.tag=${{ github.sha }} \
-            --set image.registry=${{ env.ACR_LOGIN_SERVER }} \
+            --set image.pullSecretName=${{ env.GHCR_PULL_SECRET_NAME }} \
             --set azure.backendUamiClientId=${{ env.BACKEND_UAMI_CLIENT_ID }} \
             --set ingress.hosts.api=${{ env.API_HOST }} \
             --set ingress.hosts.app=${{ env.APP_HOST }} \

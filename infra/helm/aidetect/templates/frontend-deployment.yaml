@@ -27,6 +27,10 @@ spec:
         app.kubernetes.io/part-of: aidetect
     spec:
       serviceAccountName: {{ $fullname }}-frontend
+      {{- if .Values.image.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecretName }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

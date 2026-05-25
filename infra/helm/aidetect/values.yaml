@@ -17,9 +17,12 @@ azure:
 
 # Image registry — overridden per env via --set image.registry / image.tag
 image:
-  registry: "aidetectacrdev.azurecr.io"
+  registry: "ghcr.io/co-actor"
   pullPolicy: Always
   tag: "dev-latest"
+  # Name of an existing imagePullSecret in the namespace if the GHCR packages are private.
+  # Leave empty when packages are public.
+  pullSecretName: ""
 
 # Common pod placement (default nodepool, shared dev namespace)
 nodeSelector: {}
@@ -30,7 +33,7 @@ backend:
   name: backend
   replicas: 1
   image:
-    repository: backend
+    repository: aidetect-backend
     tag: ""  # falls back to .Values.image.tag
   port: 8010
   env:
@@ -71,7 +74,7 @@ frontend:
   name: frontend
   replicas: 1
   image:
-    repository: frontend
+    repository: aidetect-frontend
     tag: ""  # falls back to .Values.image.tag
   port: 80
   resources:

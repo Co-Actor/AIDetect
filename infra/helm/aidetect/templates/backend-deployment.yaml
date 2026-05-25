@@ -28,6 +28,10 @@ spec:
         azure.workload.identity/use: "true"
     spec:
       serviceAccountName: {{ $fullname }}-backend
+      {{- if .Values.image.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecretName }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

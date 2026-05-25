@@ -7,8 +7,9 @@ azure:
   keyVaultName: "kv-aidetect-dev"
 
 image:
-  registry: "aidetectacrdev.azurecr.io"
+  registry: "ghcr.io/co-actor"
   pullPolicy: Always
+  pullSecretName: ""  # set to a docker-registry secret name if GHCR packages are private
 
 ingress:
   enabled: true
