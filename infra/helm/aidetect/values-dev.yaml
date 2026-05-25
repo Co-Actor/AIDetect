@@ -1,0 +1,18 @@
+# Development environment overrides.
+# Image tag and azure.backendUamiClientId are injected by the CI workflow via --set.
+
+fullnameOverride: aidetect-dev
+
+azure:
+  keyVaultName: "kv-aidetect-dev"
+
+image:
+  registry: "aidetectacrdev.azurecr.io"
+  pullPolicy: Always
+
+ingress:
+  enabled: true
+  tlsSecretName: aidetect-dev-tls
+  hosts:
+    api: api.aidetect.co.actor
+    app: aidetect.co.actor

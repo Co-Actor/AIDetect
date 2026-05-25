@@ -1,0 +1,6 @@
+apiVersion: v2
+name: aidetect
+description: AIDetect — multi-signal AI text detector (backend + frontend)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -1,0 +1,154 @@
+name: Deploy to AKS (development)
+
+on:
+  push:
+    branches: [development]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'infra/helm/**'
+      - '.github/workflows/deploy-dev.yml'
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Comma-separated services to deploy (backend,frontend) or "all"'
+        default: 'all'
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+  AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+  ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+  AKS_NAME: ${{ vars.AKS_NAME }}
+  AKS_RESOURCE_GROUP: ${{ vars.AKS_RESOURCE_GROUP }}
+  K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+  HELM_RELEASE: ${{ vars.HELM_RELEASE }}
+  BACKEND_UAMI_CLIENT_ID: ${{ vars.BACKEND_UAMI_CLIENT_ID }}
+  API_HOST: ${{ vars.API_HOST }}
+  APP_HOST: ${{ vars.APP_HOST }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          base: ${{ github.event.before }}
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+  build-and-push:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    environment: development
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+            changed: ${{ needs.detect-changes.outputs.backend }}
+          - service: frontend
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
+            changed: ${{ needs.detect-changes.outputs.frontend }}
+    steps:
+      - name: Skip if not changed
+        if: matrix.changed != 'true' && github.event_name == 'push'
+        run: echo "No changes for ${{ matrix.service }}, skipping" && exit 0
+
+      - uses: actions/checkout@v4
+        if: matrix.changed == 'true' || github.event_name == 'workflow_dispatch'
+
+      - name: Azure login (OIDC)
+        if: matrix.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: ACR login
+        if: matrix.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: az acr login --name ${{ env.ACR_LOGIN_SERVER }}
+
+      - name: Set up Docker Buildx
+        if: matrix.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build args (frontend only)
+        if: (matrix.changed == 'true' || github.event_name == 'workflow_dispatch') && matrix.service == 'frontend'
+        id: build_args
+        run: |
+          echo "args<<EOF" >> $GITHUB_OUTPUT
+          echo "VITE_API_BASE_URL=https://${API_HOST}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Build and push image
+        if: matrix.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.ACR_LOGIN_SERVER }}/${{ matrix.service }}:${{ github.sha }}
+            ${{ env.ACR_LOGIN_SERVER }}/${{ matrix.service }}:dev-latest
+          build-args: ${{ steps.build_args.outputs.args }}
+          cache-from: type=registry,ref=${{ env.ACR_LOGIN_SERVER }}/${{ matrix.service }}:buildcache
+          cache-to: type=registry,ref=${{ env.ACR_LOGIN_SERVER }}/${{ matrix.service }}:buildcache,mode=max
+
+  deploy:
+    needs: [detect-changes, build-and-push]
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get AKS credentials
+        run: az aks get-credentials -n ${{ env.AKS_NAME }} -g ${{ env.AKS_RESOURCE_GROUP }} --overwrite-existing
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Helm upgrade --install
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE }} \
+            ./infra/helm/aidetect \
+            --namespace ${{ env.K8S_NAMESPACE }} \
+            -f ./infra/helm/aidetect/values-dev.yaml \
+            --set image.tag=${{ github.sha }} \
+            --set image.registry=${{ env.ACR_LOGIN_SERVER }} \
+            --set azure.backendUamiClientId=${{ env.BACKEND_UAMI_CLIENT_ID }} \
+            --set ingress.hosts.api=${{ env.API_HOST }} \
+            --set ingress.hosts.app=${{ env.APP_HOST }} \
+            --wait --timeout 5m
+
+      - name: Smoke check
+        run: |
+          kubectl get deploy,svc,ingress -n ${{ env.K8S_NAMESPACE }} -l app.kubernetes.io/instance=${{ env.HELM_RELEASE }}
+          kubectl rollout status -n ${{ env.K8S_NAMESPACE }} deployment/${{ env.HELM_RELEASE }}-backend --timeout=5m
+          kubectl rollout status -n ${{ env.K8S_NAMESPACE }} deployment/${{ env.HELM_RELEASE }}-frontend --timeout=5m

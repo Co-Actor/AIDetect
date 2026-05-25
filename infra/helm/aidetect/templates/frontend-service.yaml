@@ -1,0 +1,18 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aidetect.fullname" . }}-frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "aidetect.componentLabels" (dict "component" "frontend" "top" $) | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: aidetect-frontend
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  type: ClusterIP
+{{- end }}

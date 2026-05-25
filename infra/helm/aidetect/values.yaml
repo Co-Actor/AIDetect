@@ -1,0 +1,96 @@
+# Default values for aidetect Helm chart.
+# These are overridden by values-dev.yaml for the development environment.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Common labels
+commonLabels:
+  app.kubernetes.io/part-of: aidetect
+
+# Azure / Workload Identity
+azure:
+  tenantId: "126403ee-2465-4019-8431-5a17899b6774"
+  keyVaultName: "kv-aidetect-dev"
+  # UAMI client ID for backend service account — injected at deploy time via --set
+  backendUamiClientId: ""
+
+# Image registry — overridden per env via --set image.registry / image.tag
+image:
+  registry: "aidetectacrdev.azurecr.io"
+  pullPolicy: Always
+  tag: "dev-latest"
+
+# Common pod placement (default nodepool, shared dev namespace)
+nodeSelector: {}
+tolerations: []
+
+backend:
+  enabled: true
+  name: backend
+  replicas: 1
+  image:
+    repository: backend
+    tag: ""  # falls back to .Values.image.tag
+  port: 8010
+  env:
+    ENVIRONMENT: "development"
+    API_PORT: "8010"
+  # CSI-mounted secrets (Key Vault → secret-backend-env)
+  secretEnvKeys:
+    - OPENROUTER_API_KEY
+    - AIDETECT_INTERNAL_TOKEN
+    - REDIS_URL
+    - OPENAI_API_KEY
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  livenessProbe:
+    httpGet:
+      path: /v1/healthz
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /v1/healthz
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+frontend:
+  enabled: true
+  name: frontend
+  replicas: 1
+  image:
+    repository: frontend
+    tag: ""  # falls back to .Values.image.tag
+  port: 80
+  resources:
+    requests:
+      cpu: 30m
+      memory: 32Mi
+    limits:
+      cpu: 150m
+      memory: 96Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  clusterIssuer: letsencrypt-prod
+  tlsSecretName: aidetect-dev-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+  hosts:
+    api: api.aidetect.co.actor
+    app: aidetect.co.actor
