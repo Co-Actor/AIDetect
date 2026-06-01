@@ -33,6 +33,13 @@ spec:
     - host: {{ .Values.ingress.hosts.app }}
       http:
         paths:
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullname }}-backend
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:

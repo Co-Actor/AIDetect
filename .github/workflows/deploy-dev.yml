@@ -99,7 +99,9 @@ jobs:
           VITE_DEFAULT_API_KEY: ${{ secrets.VITE_DEFAULT_API_KEY }}
         run: |
           echo "args<<EOF" >> $GITHUB_OUTPUT
-          echo "VITE_API_BASE_URL=https://${API_HOST}" >> $GITHUB_OUTPUT
+          # Single-domain: empty base URL -> SPA calls relative /v1/* on its own origin (aidetect.co.actor),
+          # which the ingress proxies to the backend. No cross-origin, no CORS dependency.
+          echo "VITE_API_BASE_URL=" >> $GITHUB_OUTPUT
           echo "VITE_DEFAULT_API_KEY=${VITE_DEFAULT_API_KEY}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
