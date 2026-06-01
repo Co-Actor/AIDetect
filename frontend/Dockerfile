@@ -8,7 +8,9 @@ RUN npm ci
 
 COPY . .
 
-ARG VITE_API_BASE_URL=http://localhost:8010
+# Empty by default: single-domain (relative /v1/* on the SPA's own origin). The vite dev
+# server uses localhost:8010 via import.meta.env.DEV, which never runs through this image.
+ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 ARG VITE_DEFAULT_API_KEY=""

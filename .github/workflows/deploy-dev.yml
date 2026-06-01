@@ -147,16 +147,12 @@ jobs:
       - name: Resolve image tags
         id: tags
         run: |
-          if [ "${{ needs.detect-changes.outputs.backend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "backend=${{ github.sha }}" >> $GITHUB_OUTPUT
-          else
-            echo "backend=dev-latest" >> $GITHUB_OUTPUT
-          fi
-          if [ "${{ needs.detect-changes.outputs.frontend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "frontend=${{ github.sha }}" >> $GITHUB_OUTPUT
-          else
-            echo "frontend=dev-latest" >> $GITHUB_OUTPUT
-          fi
+          dispatch='${{ github.event_name }}'
+          # SHA if the service was (re)built this run (its dir changed, or a manual dispatch
+          # rebuilds everything), otherwise dev-latest (its last successful build).
+          tag() { if [ "$1" = "true" ] || [ "$dispatch" = "workflow_dispatch" ]; then echo "${{ github.sha }}"; else echo "dev-latest"; fi; }
+          echo "backend=$(tag '${{ needs.detect-changes.outputs.backend }}')" >> $GITHUB_OUTPUT
+          echo "frontend=$(tag '${{ needs.detect-changes.outputs.frontend }}')" >> $GITHUB_OUTPUT
 
       - name: Helm upgrade --install
         run: |

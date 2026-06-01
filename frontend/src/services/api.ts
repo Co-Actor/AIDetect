@@ -31,13 +31,8 @@ export function setApiKey(value: string | null): void {
 // Single-domain by default: when VITE_API_BASE_URL is unset/empty, production builds
 // use a relative base ('') so requests hit /v1/* on the same origin (proxied to the
 // backend by the ingress). Local dev falls back to the standalone backend port.
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const resolvedBaseUrl =
-  apiBaseUrl != null && apiBaseUrl !== ''
-    ? apiBaseUrl
-    : import.meta.env.DEV
-      ? 'http://localhost:8010'
-      : '';
+  import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8010' : '');
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: resolvedBaseUrl,
