@@ -2,6 +2,9 @@
 .thumbs.db
 node_modules
 
+# Build uses npm ci against package-lock.json; pnpm-lock.yaml is not consumed.
+pnpm-lock.yaml
+
 /dist
 
 /.quasar
