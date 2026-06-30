@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
 
-from aidetect.api.deps import AuthDep, SettingsDep
+from aidetect.api.deps import SettingsDep
 from aidetect.schemas.rewrite import RewriteRequest, RewriteResponse
+from aidetect.services.auth import CurrentUserDep
 from aidetect.services.cache import get_cache
 from aidetect.services.orchestrator import Orchestrator
 from aidetect.services.rewriter import Rewriter
@@ -13,7 +14,7 @@ router = APIRouter()
 async def create_rewrite(
     payload: RewriteRequest,
     settings: SettingsDep,
-    _auth: AuthDep,
+    _user: CurrentUserDep,
 ) -> RewriteResponse:
     if len(payload.text) > settings.max_text_length:
         raise HTTPException(

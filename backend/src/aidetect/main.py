@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from aidetect import __version__
 from aidetect.api.v1.router import api_router
 from aidetect.config import get_settings
+from aidetect.db.migrate import run_migrations
+from aidetect.db.session import get_engine
 from aidetect.services.cache import close_cache
 from aidetect.services.observability import flush_observer, get_observer
 
@@ -27,9 +29,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         "[observability] %s",
         "Langfuse enabled" if observer.enabled else "no-op (Langfuse disabled)",
     )
+    engine = get_engine()
+    await run_migrations(engine)
     yield
     flush_observer()
     await close_cache()
+    await engine.dispose()
     logger.info("AIDetect stopped")
 
 

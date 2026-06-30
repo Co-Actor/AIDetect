@@ -6,6 +6,7 @@ RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY migrations ./migrations
 
 RUN uv pip install --system --no-cache .
 

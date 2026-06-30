@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pytest
 
-
 SAMPLE = (
     "Let's dive into this game-changer. In today's fast-paced world, we leverage "
     "innovation seamlessly. At the end of the day, it's no secret that this matters."
@@ -16,13 +15,13 @@ async def test_detect_requires_token(client) -> None:
 
 
 @pytest.mark.asyncio
-async def test_detect_rejects_wrong_token(client) -> None:
+async def test_detect_rejects_invalid_token(client) -> None:
     resp = await client.post(
         "/v1/detections",
-        headers={"X-API-Key": "nope"},
+        headers={"Authorization": "Bearer not-a-real-jwt"},
         json={"text": "hello"},
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -37,10 +36,36 @@ async def test_detect_smoke_with_patterns(client, auth_headers) -> None:
     assert body["object"] == "detection"
     assert 0.0 <= body["result"]["ai_probability"] <= 1.0
     assert body["result"]["verdict"] in {
-        "human", "likely_human", "uncertain", "likely_ai", "ai",
+        "human",
+        "likely_human",
+        "uncertain",
+        "likely_ai",
+        "ai",
     }
     assert body["signals"]["patterns"]["matches"], "expected at least one pattern hit"
     assert body["request"]["text_hash"].startswith("sha256:")
+
+
+@pytest.mark.asyncio
+async def test_detect_allows_internal_token_for_calibration(client) -> None:
+    resp = await client.post(
+        "/v1/detections",
+        headers={"X-API-Key": "test-token-12345"},
+        json={"text": SAMPLE, "mode": "fast"},
+    )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["object"] == "detection"
+
+
+@pytest.mark.asyncio
+async def test_detect_allows_internal_bearer_token(client) -> None:
+    resp = await client.post(
+        "/v1/detections",
+        headers={"Authorization": "Bearer test-token-12345"},
+        json={"text": SAMPLE, "mode": "fast"},
+    )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["object"] == "detection"
 
 
 @pytest.mark.asyncio

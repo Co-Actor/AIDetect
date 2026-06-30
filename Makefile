@@ -1,4 +1,4 @@
-.PHONY: help install dev backend frontend test lint format redis-up redis-down
+.PHONY: help install dev backend frontend test lint format redis-up redis-down db-up migrate
 
 help:
 	@echo "AIDetect — make targets:"
@@ -8,6 +8,8 @@ help:
 	@echo "  frontend    run frontend dev server (port 9000)"
 	@echo "  redis-up    start redis via docker compose"
 	@echo "  redis-down  stop redis"
+	@echo "  db-up       start postgres via docker compose"
+	@echo "  migrate     apply DB migrations against DATABASE_URL"
 	@echo "  test        run pytest"
 	@echo "  lint        ruff + mypy + eslint"
 	@echo "  format      ruff format + prettier"
@@ -30,6 +32,12 @@ redis-up:
 
 redis-down:
 	docker compose stop redis
+
+db-up:
+	docker compose up -d postgres
+
+migrate:
+	cd backend && uv run python -m aidetect.db.migrate
 
 test:
 	cd backend && uv run pytest

@@ -9,6 +9,7 @@
     "dev": "quasar dev",
     "build": "quasar build",
     "lint": "eslint --ext .js,.ts,.vue ./src",
+    "test:e2e": "playwright test",
     "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md}\""
   },
   "dependencies": {
@@ -21,11 +22,13 @@
     "vue-router": "^4.3.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@quasar/app-vite": "^2.0.0",
     "@types/node": "^20.14.5",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.14.1",
     "eslint": "^8.57.0",
+    "eslint-define-config": "^2.1.0",
     "eslint-plugin-vue": "^9.27.0",
     "prettier": "^3.3.2",
     "typescript": "^5.5.2",

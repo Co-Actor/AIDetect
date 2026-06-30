@@ -1,32 +1,10 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
-import type { DetectionRequest, DetectionResult } from 'src/types/detection';
+import type { DetectionRequest, DetectionResult, Mode } from 'src/types/detection';
 import type { RewriteRequest, RewriteResponse } from 'src/types/rewrite';
+import type { UserInfo } from 'src/stores/auth';
 
-const API_KEY_STORAGE_KEY = 'aidetect_api_key';
-
-function bootstrapApiKey(): void {
-  if (typeof localStorage === 'undefined') return;
-  const stored = localStorage.getItem(API_KEY_STORAGE_KEY);
-  if (stored) return;
-  const fallback = import.meta.env.VITE_DEFAULT_API_KEY;
-  if (fallback) {
-    localStorage.setItem(API_KEY_STORAGE_KEY, fallback);
-  }
-}
-
-bootstrapApiKey();
-
-export function getApiKey(): string | null {
-  if (typeof localStorage === 'undefined') return null;
-  return localStorage.getItem(API_KEY_STORAGE_KEY);
-}
-
-export function setApiKey(value: string | null): void {
-  if (typeof localStorage === 'undefined') return;
-  if (value) localStorage.setItem(API_KEY_STORAGE_KEY, value);
-  else localStorage.removeItem(API_KEY_STORAGE_KEY);
-}
+const TOKEN_KEY = 'aidetect_auth_token';
 
 // Single-domain by default: when VITE_API_BASE_URL is unset/empty, production builds
 // use a relative base ('') so requests hit /v1/* on the same origin (proxied to the
@@ -42,10 +20,22 @@ const apiClient: AxiosInstance = axios.create({
   timeout: 30000,
 });
 
+// Public endpoints that must NOT trigger a redirect on 401.
+const PUBLIC_URL_PATTERNS = [
+  /^\/v1\/share\/[^/]+$/, // GET /v1/share/{token}
+  /^\/v1\/share\/[^/]+\/trial/, // POST /v1/share/{token}/trial
+  /^\/v1\/auth\//, // all auth endpoints
+];
+
+function isPublicUrl(url: string): boolean {
+  return PUBLIC_URL_PATTERNS.some((re) => re.test(url));
+}
+
 apiClient.interceptors.request.use((config) => {
-  const apiKey = getApiKey();
-  if (apiKey) {
-    config.headers.set('X-API-Key', apiKey);
+  // Read token directly from localStorage to avoid Pinia init-order issues.
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+  if (token) {
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
   return config;
 });
@@ -53,6 +43,18 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status: number | undefined = error?.response?.status;
+    const requestUrl: string = error?.config?.url ?? '';
+
+    if (status === 401 && !isPublicUrl(requestUrl)) {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(TOKEN_KEY);
+      }
+      // Hard redirect so the router guard picks up the cleared state.
+      window.location.href = '/login';
+      return new Promise(() => undefined); // swallow — redirect is happening
+    }
+
     const data: unknown = error?.response?.data;
     let message = 'An unknown error occurred';
     if (data && typeof data === 'object' && 'detail' in data) {
@@ -66,6 +68,32 @@ apiClient.interceptors.response.use(
   },
 );
 
+// ── Auth ────────────────────────────────────────────────────────────────────
+
+export interface AuthResponse {
+  token: string;
+  user: UserInfo;
+}
+
+export const authApi = {
+  register(email: string, password: string, name?: string): Promise<AuthResponse> {
+    return apiClient
+      .post<AuthResponse>('/v1/auth/register', { email, password, name })
+      .then((r) => r.data);
+  },
+  login(email: string, password: string): Promise<AuthResponse> {
+    return apiClient.post<AuthResponse>('/v1/auth/login', { email, password }).then((r) => r.data);
+  },
+  google(id_token: string): Promise<AuthResponse> {
+    return apiClient.post<AuthResponse>('/v1/auth/google', { id_token }).then((r) => r.data);
+  },
+  me(): Promise<UserInfo> {
+    return apiClient.get<UserInfo>('/v1/auth/me').then((r) => r.data);
+  },
+};
+
+// ── Detection ───────────────────────────────────────────────────────────────
+
 export const detectionApi = {
   analyze(request: DetectionRequest): Promise<DetectionResult> {
     const payload: DetectionRequest = {
@@ -78,11 +106,11 @@ export const detectionApi = {
         ...(request.options ?? {}),
       },
     };
-    return apiClient
-      .post<DetectionResult>('/v1/detections', payload)
-      .then((res) => res.data);
+    return apiClient.post<DetectionResult>('/v1/detections', payload).then((res) => res.data);
   },
 };
+
+// ── Rewrite ─────────────────────────────────────────────────────────────────
 
 export const rewriteApi = {
   rewrite(request: RewriteRequest): Promise<RewriteResponse> {
@@ -98,6 +126,56 @@ export const rewriteApi = {
     return apiClient
       .post<RewriteResponse>('/v1/rewrite', payload, { timeout: 90_000 })
       .then((res) => res.data);
+  },
+};
+
+// ── Share ───────────────────────────────────────────────────────────────────
+
+export interface ShareCreateRequest {
+  input_text: string;
+  mode?: Mode;
+}
+
+export interface ShareCreateResponse {
+  token: string;
+  url: string;
+  trial_limit: number;
+  trial_used: number;
+}
+
+export interface ShareGetResponse {
+  token: string;
+  result: DetectionResult;
+  input_text: string;
+  trial_used: number;
+  trial_limit: number;
+  active: boolean;
+}
+
+export interface ShareTrialRequest {
+  text: string;
+  mode?: string;
+}
+
+export interface ShareTrialResponse {
+  result: DetectionResult;
+  trial_used: number;
+  trial_limit: number;
+  remaining: number;
+  active: boolean;
+}
+
+export const shareApi = {
+  create(payload: ShareCreateRequest): Promise<ShareCreateResponse> {
+    return apiClient.post<ShareCreateResponse>('/v1/share', payload).then((r) => r.data);
+  },
+  get(token: string): Promise<ShareGetResponse> {
+    return apiClient.get<ShareGetResponse>(`/v1/share/${token}`).then((r) => r.data);
+  },
+  trial(token: string, payload: ShareTrialRequest): Promise<ShareTrialResponse> {
+    return apiClient
+      .post<ShareTrialResponse>(`/v1/share/${token}/trial`, payload)
+      .then((r) => r.data);
   },
 };
 

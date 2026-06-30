@@ -12,7 +12,6 @@ module.exports = defineConfig({
   extends: [
     'plugin:vue/vue3-essential',
     'eslint:recommended',
-    '@typescript-eslint/eslint-plugin',
     'plugin:@typescript-eslint/recommended',
   ],
   parser: 'vue-eslint-parser',

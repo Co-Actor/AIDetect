@@ -4,8 +4,9 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, status
 
-from aidetect.api.deps import AuthDep, SettingsDep
+from aidetect.api.deps import SettingsDep
 from aidetect.schemas.feedback import FeedbackRequest, FeedbackResponse
+from aidetect.services.auth import CurrentUserDep
 from aidetect.services.cache import get_cache
 from aidetect.services.feedback_log import append_feedback
 from aidetect.services.observability import get_observer
@@ -30,7 +31,7 @@ _LABEL_TO_SCORE: dict[str, float | None] = {
 async def submit_feedback(
     payload: FeedbackRequest,
     settings: SettingsDep,
-    _auth: AuthDep,
+    _user: CurrentUserDep,
 ) -> FeedbackResponse:
     feedback_id = uuid.uuid4()
     created_at = datetime.now(UTC)

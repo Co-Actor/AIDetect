@@ -222,22 +222,54 @@ kubectl create secret docker-registry ghcr-pull-secret \
 
 ### 6. Импортировать секреты в Key Vault
 
-Backend ожидает 3 обязательных ключа (см. `infra/helm/aidetect/values.yaml` → `backend.secretEnvKeys`):
+Backend ожидает обязательные ключи (см. `infra/helm/aidetect/values.yaml` → `backend.secretEnvKeys`):
 
 | Helm key | KV secret name | Описание |
 |---|---|---|
 | `OPENROUTER_API_KEY` | `aidetect-dev-backend-OPENROUTER-API-KEY` | OpenRouter API key для LLM-as-judge |
 | `AIDETECT_INTERNAL_TOKEN` | `aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN` | Internal API token (≥8 chars; скрипт сгенерирует, если оставить пустым) |
 | `REDIS_URL` | `aidetect-dev-backend-REDIS-URL` | TLS URL Azure Cache for Redis: `rediss://:<key>@<host>:6380/0` |
+| `DATABASE_URL` | `aidetect-dev-backend-DATABASE-URL` | **Managed Postgres** async DSN: `postgresql+asyncpg://USER:PASS@HOST:5432/DB` (см. §6a) |
+| `AUTH_JWT_SECRET` | `aidetect-dev-backend-AUTH-JWT-SECRET` | Случайная строка ≥32 символов для подписи JWT |
 
-Имя секрета в KV = `aidetect-dev-backend-<KEY-WITH-HYPHENS>`. Запись:
+Имя секрета в KV = `aidetect-dev-backend-<KEY-WITH-HYPHENS>` (регистр сохраняется). Запись:
 
 ```bash
 KV="kv-aidetect-dev"
 az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-OPENROUTER-API-KEY --value '<openrouter-api-key>'
 az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-AIDETECT-INTERNAL-TOKEN --value '<internal-token>'
 az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-REDIS-URL --value "$REDIS_URL"   # из шага §1
+az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-DATABASE-URL --value "$DATABASE_URL"  # из §6a
+az keyvault secret set --vault-name "$KV" -n aidetect-dev-backend-AUTH-JWT-SECRET --value "$(openssl rand -hex 32)"
 ```
+
+#### 6a. Managed Postgres (обязательно для prod)
+
+Шаринговые ссылки, пользователи и счётчик пробных проверок живут в БД. На AKS под эфемерный —
+SQLite терять нельзя, нужен managed Postgres (создаётся один раз):
+
+```bash
+RG="DefaultResourceGroup-EUS"; LOC="eastus2"
+az postgres flexible-server create \
+  --resource-group "$RG" --name pg-aidetect-dev --location "$LOC" \
+  --tier Burstable --sku-name Standard_B1ms --storage-size 32 \
+  --version 16 --admin-user aidetect --admin-password '<strong-password>' \
+  --database-name aidetect --public-access 0.0.0.0   # затем ограничь firewall до AKS egress
+# DSN для KV (driver asyncpg, sslmode require):
+DATABASE_URL="postgresql+asyncpg://aidetect:<strong-password>@pg-aidetect-dev.postgres.database.azure.com:5432/aidetect?ssl=require"
+```
+
+Миграции применяются автоматически при старте backend (`run_migrations` в lifespan; файлы
+`backend/migrations/*.up.sql`). Отдельный job не нужен.
+
+#### 6b. Google OAuth (опционально — вход через Google)
+
+Google-кнопка появляется только когда задан client ID; иначе фича no-op.
+1. Google Cloud Console → APIs & Services → Credentials → Create OAuth client ID → **Web application**.
+2. Authorized JavaScript origins: `https://aidetect.co.actor`. Authorized redirect URIs не нужны (используется Google Identity Services / ID-token flow).
+3. Скопируй **Client ID** и пропиши его в ДВУХ местах:
+   - backend: `backend.env.GOOGLE_OAUTH_CLIENT_ID` в `values.yaml` (публичный, не секрет — это audience для верификации ID-токена);
+   - frontend: GitHub Actions secret `VITE_GOOGLE_CLIENT_ID` (build-arg, бейкается в SPA — см. `deploy-dev.yml`).
 
 Langfuse keys добавляются позже, когда Langfuse-сервер развёрнут отдельно:
 1. `az keyvault secret set` для `LANGFUSE_PUBLIC_KEY` и `LANGFUSE_SECRET_KEY`

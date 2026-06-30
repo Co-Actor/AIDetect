@@ -22,6 +22,16 @@ class Settings(BaseSettings):
 
     aidetect_internal_token: str = Field(default="dev-token-change-me", min_length=8)
 
+    # ── Persistence (Postgres in prod, SQLite for tests) ─────────────
+    database_url: str = "postgresql+asyncpg://aidetect:aidetect@localhost:5432/aidetect"
+
+    # ── User auth (JWT) + Google sign-in + sharing trials ────────────
+    auth_jwt_secret: str = Field(default="dev-jwt-secret-change-me-please", min_length=16)
+    auth_jwt_expire_minutes: int = 10080  # 7 days
+    google_oauth_client_id: str | None = None
+    app_base_url: str = "http://localhost:9000"
+    trial_check_limit: int = 3
+
     coactor_database_url: str | None = None
 
     redis_url: str | None = "redis://localhost:6380/0"
