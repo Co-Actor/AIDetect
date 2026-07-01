@@ -158,18 +158,36 @@ jobs:
           echo "frontend=$(tag '${{ needs.detect-changes.outputs.frontend }}')" >> $GITHUB_OUTPUT
 
       - name: Helm upgrade --install
+        # Retry on transient AKS control-plane throttling: client-go's rate limiter can
+        # exhaust the --wait deadline ("client rate limiter Wait ... context deadline
+        # exceeded"). A short backoff + longer per-attempt timeout self-heals without a
+        # manual re-run. helm upgrade is idempotent, so replaying is safe.
         run: |
-          helm upgrade --install ${{ env.HELM_RELEASE }} \
-            ./infra/helm/aidetect \
-            --namespace ${{ env.K8S_NAMESPACE }} \
-            -f ./infra/helm/aidetect/values-dev.yaml \
-            --set image.registry=${{ env.ACR_LOGIN_SERVER }} \
-            --set backend.image.tag=${{ steps.tags.outputs.backend }} \
-            --set frontend.image.tag=${{ steps.tags.outputs.frontend }} \
-            --set azure.backendUamiClientId=${{ env.BACKEND_UAMI_CLIENT_ID }} \
-            --set ingress.hosts.api=${{ env.API_HOST }} \
-            --set ingress.hosts.app=${{ env.APP_HOST }} \
-            --wait --timeout 5m
+          set -o pipefail
+          attempts=3
+          for i in $(seq 1 $attempts); do
+            echo "::group::helm upgrade attempt $i/$attempts"
+            if helm upgrade --install ${{ env.HELM_RELEASE }} \
+              ./infra/helm/aidetect \
+              --namespace ${{ env.K8S_NAMESPACE }} \
+              -f ./infra/helm/aidetect/values-dev.yaml \
+              --set image.registry=${{ env.ACR_LOGIN_SERVER }} \
+              --set backend.image.tag=${{ steps.tags.outputs.backend }} \
+              --set frontend.image.tag=${{ steps.tags.outputs.frontend }} \
+              --set azure.backendUamiClientId=${{ env.BACKEND_UAMI_CLIENT_ID }} \
+              --set ingress.hosts.api=${{ env.API_HOST }} \
+              --set ingress.hosts.app=${{ env.APP_HOST }} \
+              --wait --timeout 10m; then
+              echo "::endgroup::"
+              echo "helm upgrade succeeded on attempt $i"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "helm upgrade failed on attempt $i/$attempts"
+            [ "$i" -lt "$attempts" ] && { echo "retrying in 30s..."; sleep 30; }
+          done
+          echo "helm upgrade failed after $attempts attempts"
+          exit 1
 
       - name: Smoke check
         run: |
