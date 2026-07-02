@@ -91,8 +91,7 @@ async function handleLogin(): Promise<void> {
           <GoogleSignInButton />
 
           <p class="auth-switch eyebrow">
-            Don't have an account?
-            <router-link to="/register" class="auth-link">Register</router-link>
+            Access is invite-only.
           </p>
         </div>
       </q-page>

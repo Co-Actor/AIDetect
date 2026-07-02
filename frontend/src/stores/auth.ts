@@ -7,6 +7,7 @@ export interface UserInfo {
   id: string;
   email: string;
   name: string | null;
+  is_admin: boolean;
 }
 
 const TOKEN_KEY = 'aidetect_auth_token';
@@ -37,8 +38,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(email: string, password: string, name?: string): Promise<void> {
-    const data = await authApi.register(email, password, name);
+  async function register(
+    email: string,
+    password: string,
+    name?: string,
+    inviteToken?: string,
+  ): Promise<void> {
+    const data = await authApi.register(email, password, name, inviteToken);
     setSession(data.token, data.user);
   }
 

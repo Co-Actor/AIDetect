@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     app_base_url: str = "http://localhost:9000"
     trial_check_limit: int = 3
 
+    # ── Invite-only registration ─────────────────────────────────────
+    registration_open: bool = False
+    resend_api_key: str | None = None
+    email_from: str = "AIDetect <onboarding@resend.dev>"
+    invite_expire_days: int = 14
+    # Comma-separated emails granted the admin role (seeded on startup + on login).
+    admin_emails: str = "i.salmova@cccrafts.ai"
+
     coactor_database_url: str | None = None
 
     redis_url: str | None = "redis://localhost:6380/0"
@@ -73,6 +81,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.api_cors_origins.split(",") if o.strip()]
+
+    @property
+    def admin_emails_set(self) -> set[str]:
+        return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
 
     def model_for_mode(self, mode: str) -> str:
         return {

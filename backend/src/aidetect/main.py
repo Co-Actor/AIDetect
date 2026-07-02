@@ -4,16 +4,32 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from aidetect import __version__
 from aidetect.api.v1.router import api_router
-from aidetect.config import get_settings
+from aidetect.config import Settings, get_settings
 from aidetect.db.migrate import run_migrations
+from aidetect.db.models import User
 from aidetect.db.session import get_engine
 from aidetect.services.cache import close_cache
 from aidetect.services.observability import flush_observer, get_observer
 
 logger = logging.getLogger(__name__)
+
+
+async def _promote_configured_admins(engine: AsyncEngine, settings: Settings) -> None:
+    """Grant is_admin to every user whose email is in ADMIN_EMAILS.
+
+    Runs after migrations so a listed admin who registered earlier is promoted
+    on the next boot; new listed admins self-promote on login (see auth router).
+    """
+    emails = settings.admin_emails_set
+    if not emails:
+        return
+    async with engine.begin() as conn:
+        await conn.execute(update(User).where(User.email.in_(emails)).values(is_admin=True))
 
 
 @asynccontextmanager
@@ -31,6 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     engine = get_engine()
     await run_migrations(engine)
+    await _promote_configured_admins(engine, settings)
     yield
     flush_observer()
     await close_cache()

@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import secrets
 import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from aidetect.db.models import Detection, ShareLink, User
+from aidetect.db.models import AccessRequest, Detection, Invitation, ShareLink, User
 
 # Synthetic account that owns detections/links created via the service API
 # (internal-token auth). Non-routable email; cannot sign in (no password/google).
@@ -23,6 +24,25 @@ SERVICE_USER_EMAIL = "service@aidetect.local"
 
 def _normalize_email(email: str) -> str:
     return email.strip().lower()
+
+
+def _as_aware_utc(dt: datetime | None) -> datetime | None:
+    """Coerce a DB-read datetime to tz-aware UTC.
+
+    SQLite (tests) drops tzinfo on ``DateTime(timezone=True)`` columns, so values
+    read back are naive; Postgres keeps them aware. Normalise to UTC so
+    comparisons against ``datetime.now(UTC)`` never mix naive and aware.
+    """
+    if dt is None:
+        return None
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
+
+
+def invitation_is_expired(inv: Invitation, *, now: datetime | None = None) -> bool:
+    expires_at = _as_aware_utc(inv.expires_at)
+    if expires_at is None:
+        return False
+    return (now or datetime.now(UTC)) > expires_at
 
 
 async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
@@ -103,6 +123,29 @@ async def get_or_create_service_user(session: AsyncSession) -> User:
         return existing
 
 
+async def list_users(session: AsyncSession) -> list[User]:
+    stmt = select(User).order_by(User.created_at.desc())
+    return list((await session.execute(stmt)).scalars())
+
+
+async def set_user_admin(session: AsyncSession, user: User, value: bool) -> None:
+    user.is_admin = value
+    await session.commit()
+    await session.refresh(user)
+
+
+async def delete_user(session: AsyncSession, user_id: uuid.UUID) -> None:
+    """Delete a user with their detections + share links.
+
+    Dialect-agnostic: explicit child deletes work on both SQLite (tests, no FK
+    enforcement) and Postgres (prod), independent of ON DELETE CASCADE.
+    """
+    await session.execute(delete(ShareLink).where(ShareLink.user_id == user_id))
+    await session.execute(delete(Detection).where(Detection.user_id == user_id))
+    await session.execute(delete(User).where(User.id == user_id))
+    await session.commit()
+
+
 async def create_detection(
     session: AsyncSession,
     *,
@@ -181,4 +224,114 @@ async def refund_trial(session: AsyncSession, token: str) -> None:
         .values(trial_used=ShareLink.trial_used - 1)
     )
     await session.execute(stmt)
+    await session.commit()
+
+
+# ── Invitations ──────────────────────────────────────────────────────
+
+
+async def create_invitation(
+    session: AsyncSession,
+    *,
+    email: str,
+    invited_by: uuid.UUID | None,
+    expires_at: datetime | None,
+) -> Invitation:
+    invitation = Invitation(
+        email=_normalize_email(email),
+        token=secrets.token_urlsafe(24),
+        status="pending",
+        invited_by=invited_by,
+        expires_at=expires_at,
+    )
+    session.add(invitation)
+    await session.commit()
+    await session.refresh(invitation)
+    return invitation
+
+
+async def get_invitation_by_token(session: AsyncSession, token: str) -> Invitation | None:
+    stmt = select(Invitation).where(Invitation.token == token)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def get_pending_invitation_by_email(session: AsyncSession, email: str) -> Invitation | None:
+    """Return a still-valid pending invitation for an email, or None.
+
+    Expired pending invitations are treated as absent.
+    """
+    stmt = select(Invitation).where(
+        Invitation.email == _normalize_email(email),
+        Invitation.status == "pending",
+    )
+    now = datetime.now(UTC)
+    for invitation in (await session.execute(stmt)).scalars():
+        if invitation_is_expired(invitation, now=now):
+            continue
+        return invitation
+    return None
+
+
+async def accept_invitation(session: AsyncSession, inv: Invitation) -> None:
+    inv.status = "accepted"
+    inv.accepted_at = datetime.now(UTC)
+    await session.commit()
+
+
+async def list_invitations(session: AsyncSession) -> list[Invitation]:
+    stmt = select(Invitation).order_by(Invitation.created_at.desc())
+    return list((await session.execute(stmt)).scalars())
+
+
+# ── Access requests ──────────────────────────────────────────────────
+
+
+async def create_access_request(
+    session: AsyncSession,
+    *,
+    email: str,
+    source_share_token: str | None,
+) -> AccessRequest:
+    request = AccessRequest(
+        email=_normalize_email(email),
+        status="pending",
+        source_share_token=source_share_token,
+    )
+    session.add(request)
+    await session.commit()
+    await session.refresh(request)
+    return request
+
+
+async def get_pending_access_request_by_email(
+    session: AsyncSession, email: str
+) -> AccessRequest | None:
+    stmt = select(AccessRequest).where(
+        AccessRequest.email == _normalize_email(email),
+        AccessRequest.status == "pending",
+    )
+    return (await session.execute(stmt)).scalars().first()
+
+
+async def get_active_access_request_by_email(
+    session: AsyncSession, email: str
+) -> AccessRequest | None:
+    stmt = select(AccessRequest).where(
+        AccessRequest.email == _normalize_email(email),
+        AccessRequest.status.in_(("pending", "invited")),
+    )
+    return (await session.execute(stmt)).scalars().first()
+
+
+async def list_access_requests(session: AsyncSession) -> list[AccessRequest]:
+    stmt = select(AccessRequest).order_by(AccessRequest.created_at.desc())
+    return list((await session.execute(stmt)).scalars())
+
+
+async def get_access_request(session: AsyncSession, id: uuid.UUID) -> AccessRequest | None:
+    return await session.get(AccessRequest, id)
+
+
+async def mark_request_invited(session: AsyncSession, req: AccessRequest) -> None:
+    req.status = "invited"
     await session.commit()

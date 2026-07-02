@@ -50,6 +50,10 @@ backend:
     # Audience the backend verifies ID tokens against; the same value is baked into
     # the SPA via the VITE_GOOGLE_CLIENT_ID build-arg (GitHub Actions secret).
     GOOGLE_OAUTH_CLIENT_ID: "225787295362-3eimoroafvlat8d2otfk5jl7ol5jjaap.apps.googleusercontent.com"
+    # Comma-separated emails granted the admin role (seeded on startup + self-heal on login).
+    ADMIN_EMAILS: "i.salmova@cccrafts.ai"
+    # Sender for invitation emails (Resend-verified domain). Key is the KV secret below.
+    EMAIL_FROM: "AIDetect <aidetect@email.co.actor>"
   # CSI-mounted secrets (Key Vault → secret-backend-env).
   # NOTE: DATABASE_URL and AUTH_JWT_SECRET MUST exist in Key Vault before deploying —
   # the app will not start without a database. KV secret name = aidetect-dev-backend-<KEY-WITH-HYPHENS>
@@ -60,6 +64,7 @@ backend:
   # SQLite on an ephemeral pod loses all users/links/trial counters on restart — do not use it in AKS.
   secretEnvKeys:
     - OPENROUTER_API_KEY
+    - RESEND_API_KEY
     - AIDETECT_INTERNAL_TOKEN
     - REDIS_URL
     - DATABASE_URL

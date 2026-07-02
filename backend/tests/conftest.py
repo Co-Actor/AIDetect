@@ -27,6 +27,7 @@ def _env(tmp_path, monkeypatch) -> Iterator[None]:
     monkeypatch.setenv("GOOGLE_OAUTH_CLIENT_ID", "")  # Google sign-in disabled by default
     monkeypatch.setenv("APP_BASE_URL", "http://testserver")
     monkeypatch.setenv("TRIAL_CHECK_LIMIT", "3")
+    monkeypatch.setenv("ADMIN_EMAILS", "i.salmova@cccrafts.ai")
     # Default tests should not touch OpenRouter — opt-in per-test.
     monkeypatch.setenv("OPENROUTER_API_KEY", "")
 
@@ -75,6 +76,27 @@ async def db_sessionmaker(
     return async_sessionmaker(bind=db_engine, expire_on_commit=False, class_=AsyncSession)
 
 
+class CapturingEmailSender:
+    """Test double that records invitation sends instead of hitting the network."""
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, str]] = []
+
+    async def send_invitation(self, email: str, invite_url: str) -> None:
+        self.sent.append((email, invite_url))
+
+
+# Shared across the app-under-test and any test that wants to assert on sends.
+_EMAIL_SENDER = CapturingEmailSender()
+
+
+@pytest.fixture
+def email_sender() -> CapturingEmailSender:
+    """The capturing email sender wired into the `client` app; reset per test."""
+    _EMAIL_SENDER.sent.clear()
+    return _EMAIL_SENDER
+
+
 @pytest_asyncio.fixture
 async def client(
     db_sessionmaker: async_sessionmaker[AsyncSession],
@@ -82,6 +104,7 @@ async def client(
     from aidetect.config import get_settings
     from aidetect.db.session import get_db_session
     from aidetect.main import create_app
+    from aidetect.services.email import get_email_sender
 
     app = create_app()
 
@@ -89,21 +112,45 @@ async def client(
         async with db_sessionmaker() as session:
             yield session
 
+    _EMAIL_SENDER.sent.clear()
+
     app.dependency_overrides[get_db_session] = _override_get_db_session
     app.dependency_overrides[get_settings] = get_settings  # fixed env-driven settings
+    app.dependency_overrides[get_email_sender] = lambda: _EMAIL_SENDER  # no network in tests
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
 
 
-async def _register(client: AsyncClient, email: str = "user@example.com") -> str:
+async def invite_and_register(
+    client: AsyncClient,
+    email: str = "user@example.com",
+    password: str = "password123",
+    name: str | None = "Test User",
+) -> str:
+    """Seed an admin invitation for `email`, then register through it.
+
+    Registration is invite-only by default, so tests that need a fresh user go
+    through this two-step flow. Returns the new user's bearer token.
+    """
+    inv = await client.post(
+        "/v1/admin/invitations",
+        json={"email": email},
+        headers={"X-API-Key": INTERNAL_TOKEN},
+    )
+    assert inv.status_code == 201, inv.text
+    token = inv.json()["token"]
     resp = await client.post(
         "/v1/auth/register",
-        json={"email": email, "password": "password123", "name": "Test User"},
+        json={"email": email, "password": password, "name": name, "invite_token": token},
     )
     assert resp.status_code == 201, resp.text
-    token: str = resp.json()["token"]
-    return token
+    auth_token: str = resp.json()["token"]
+    return auth_token
+
+
+async def _register(client: AsyncClient, email: str = "user@example.com") -> str:
+    return await invite_and_register(client, email)
 
 
 @pytest_asyncio.fixture

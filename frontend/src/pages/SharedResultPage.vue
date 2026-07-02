@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
-import { shareApi } from 'src/services/api';
+import { shareApi, accessApi } from 'src/services/api';
 import type { ShareGetResponse, ShareTrialResponse } from 'src/services/api';
 import type { Mode } from 'src/types/detection';
 import type { QInput } from 'quasar';
@@ -114,6 +114,30 @@ function clearTrial(): void {
   isEditingTrial.value = false;
 }
 
+// ── access-request form state ──────────────────────────────────────────────
+const requestEmail = ref('');
+const requestLoading = ref(false);
+const requestSent = ref(false);
+const requestSentEmail = ref('');
+
+async function handleAccessRequest(): Promise<void> {
+  if (!requestEmail.value.trim() || requestLoading.value) return;
+  requestLoading.value = true;
+  try {
+    await accessApi.request({ email: requestEmail.value.trim(), share_token: token });
+    requestSentEmail.value = requestEmail.value.trim();
+    requestSent.value = true;
+  } catch (err) {
+    $q.notify({
+      message: err instanceof Error ? err.message : 'Request failed. Please try again.',
+      icon: 'error_outline',
+      color: 'negative',
+    });
+  } finally {
+    requestLoading.value = false;
+  }
+}
+
 // Editing the analyzed text invalidates the result (same as the product).
 watch(trialText, (next) => {
   if (trialResult.value && next !== trialAnalyzedText.value) {
@@ -133,9 +157,6 @@ watch(trialText, (next) => {
             <span class="eyebrow brand-tag">Veracity workbench</span>
           </div>
         </div>
-        <q-space />
-        <q-btn flat no-caps label="Sign in" to="/login" class="eyebrow" />
-        <q-btn unelevated no-caps label="Register" to="/register" color="primary" class="q-ml-sm" />
       </q-toolbar>
       <div class="atelier-header-rule" />
     </q-header>
@@ -205,14 +226,47 @@ watch(trialText, (next) => {
                   <div v-if="exhausted" data-testid="exhausted-banner" class="exhausted-banner">
                     <q-icon name="lock_outline" size="24px" class="q-mr-sm" />
                     <span>{{ exhaustedMessage }}</span>
-                    <q-btn
-                      unelevated
-                      no-caps
-                      label="Register"
-                      color="primary"
-                      to="/register"
-                      class="q-mt-md"
-                    />
+
+                    <!-- request-sent confirmation -->
+                    <div
+                      v-if="requestSent"
+                      data-testid="request-sent"
+                      class="access-request-sent eyebrow"
+                    >
+                      Thanks — we'll email an invitation to {{ requestSentEmail }}.
+                    </div>
+
+                    <!-- request-access form -->
+                    <q-form
+                      v-else
+                      class="access-request-form"
+                      @submit.prevent="handleAccessRequest"
+                    >
+                      <q-input
+                        data-testid="request-email"
+                        v-model="requestEmail"
+                        type="email"
+                        outlined
+                        dense
+                        placeholder="your@email.com"
+                        :disable="requestLoading"
+                        :rules="[(v: string) => !!v || 'Email is required']"
+                        class="access-request-input"
+                      />
+                      <q-btn
+                        data-testid="request-submit"
+                        type="submit"
+                        label="Request access"
+                        unelevated
+                        no-caps
+                        color="primary"
+                        :loading="requestLoading"
+                        :disable="!requestEmail.trim() || requestLoading"
+                        class="q-mt-sm"
+                      >
+                        <template #loading><q-spinner-dots /></template>
+                      </q-btn>
+                    </q-form>
                   </div>
 
                   <!-- still has checks left: the input -->
@@ -501,6 +555,23 @@ watch(trialText, (next) => {
   font-size: 14px;
   color: var(--ink);
   font-weight: 500;
+}
+
+// ── access-request form ───────────────────────────────────────────────────
+.access-request-form {
+  width: 100%;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+}
+.access-request-input {
+  width: 100%;
+}
+.access-request-sent {
+  width: 100%;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  line-height: 1.5;
 }
 
 // ── responsive ────────────────────────────────────────────────────────────

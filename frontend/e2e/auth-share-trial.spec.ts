@@ -6,12 +6,28 @@ const testPassword = 'testpassword123';
 
 // --- helpers ---------------------------------------------------------------
 
-async function fillAndSubmitRegister(page: Page): Promise<void> {
-  await page.goto('/register');
-  await expect(page.getByRole('heading', { name: /create account/i })).toBeVisible();
+async function obtainInviteToken(email: string): Promise<string> {
+  // Call the admin API to create an invitation for the test user.
+  const internalToken = process.env.AIDETECT_INTERNAL_TOKEN ?? '';
+  const res = await fetch('http://localhost:8010/v1/admin/invitations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': internalToken,
+    },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    throw new Error(`Admin invitation request failed: ${res.status} ${await res.text()}`);
+  }
+  const data = (await res.json()) as { token: string };
+  return data.token;
+}
 
-  await page.getByPlaceholder('you@example.com').fill(uniqueEmail);
-  await page.getByPlaceholder('••••••••').fill(testPassword);
+async function fillAndSubmitRegister(page: Page, token: string): Promise<void> {
+  await page.goto(`/register?invite=${token}`);
+  // Email is prefilled and disabled — only fill the password.
+  await page.getByTestId('register-password').fill(testPassword);
   await page.getByTestId('register-submit').click();
 }
 
@@ -31,13 +47,19 @@ async function analyzeText(page: Page, inputText: string): Promise<void> {
 
 // --- test ------------------------------------------------------------------
 
-test('register → analyze → share → shared page → trial × 3 → exhausted', async ({ browser }) => {
+test('register → analyze → share → shared page → trial × 3 → exhausted → request access', async ({
+  browser,
+  request: _request,
+}) => {
+  // ── Obtain invitation via admin API ───────────────────────────────────────
+  const inviteToken = await obtainInviteToken(uniqueEmail);
+
   // ── Context 1: authenticated user ────────────────────────────────────────
   const authContext: BrowserContext = await browser.newContext();
   const page: Page = await authContext.newPage();
 
-  // 1. Register
-  await fillAndSubmitRegister(page);
+  // 1. Register via invite link
+  await fillAndSubmitRegister(page, inviteToken);
   await waitForWorkbench(page);
 
   // 2. Analyze
@@ -125,6 +147,19 @@ test('register → analyze → share → shared page → trial × 3 → exhauste
   // "your result" only renders when the trial result panel is shown, so this fails
   // if the result gets hidden the moment the quota hits zero (the reported bug).
   await expect(anonPage.getByText(/your result/i)).toBeVisible();
+
+  // ── Request-access form is shown instead of a Register button ─────────────
+  await expect(anonPage.getByTestId('request-email')).toBeVisible();
+
+  const requestEmailAddress = `access+${Date.now()}@example.com`;
+  await anonPage.getByTestId('request-email').fill(requestEmailAddress);
+  await anonPage.getByTestId('request-submit').click();
+
+  // Confirmation message should appear.
+  await expect(anonPage.getByTestId('request-sent')).toBeVisible({ timeout: 10_000 });
+  await expect(anonPage.getByTestId('request-sent')).toContainText(
+    `Thanks — we'll email an invitation to ${requestEmailAddress}.`,
+  );
 
   // ── Cleanup ───────────────────────────────────────────────────────────────
   await authContext.close();

@@ -22,13 +22,17 @@ onMounted(() => {
   <q-layout view="hHh lpR fFf">
     <q-header :elevated="false" class="atelier-header">
       <q-toolbar class="atelier-toolbar">
-        <div class="row items-center q-gutter-md">
+        <router-link
+          to="/"
+          class="brand-link row items-center q-gutter-md"
+          aria-label="AIDetect — home"
+        >
           <span class="brand-mark font-display">v</span>
           <div class="column items-start" style="line-height: 1">
             <span class="brand-title">AIDetect</span>
             <span class="eyebrow brand-tag">Veracity workbench</span>
           </div>
-        </div>
+        </router-link>
         <q-space />
         <span class="eyebrow brand-version">v0.1</span>
 
@@ -50,6 +54,20 @@ onMounted(() => {
                 </q-item-section>
               </q-item>
               <q-separator />
+              <q-item
+                v-if="authStore.user?.is_admin"
+                clickable
+                v-close-popup
+                data-testid="admin-link"
+                to="/admin"
+              >
+                <q-item-section avatar>
+                  <q-icon name="admin_panel_settings" size="sm" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Admin</q-item-label>
+                </q-item-section>
+              </q-item>
               <q-item
                 clickable
                 v-close-popup
@@ -84,6 +102,16 @@ onMounted(() => {
 .atelier-toolbar {
   min-height: 64px;
   padding: 0 28px;
+}
+.brand-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.7;
+  }
 }
 .brand-mark {
   display: inline-flex;

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
@@ -81,3 +82,52 @@ async def get_current_user(
 
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+
+
+def is_user_admin(user: User, settings: Settings) -> bool:
+    """True when the user holds the admin role (DB flag or configured email)."""
+    return user.is_admin or user.email.strip().lower() in settings.admin_emails_set
+
+
+async def get_admin_actor(
+    settings: Annotated[Settings, Depends(get_settings)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    x_api_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> User | None:
+    """Authorize an admin request and return the acting user.
+
+    Returns the admin ``User`` for a JWT caller, or ``None`` for the internal
+    service token (scripts / CI carry no user identity). Missing credentials →
+    401; present-but-insufficient → 403 (mirrors the internal-token dependency
+    the admin router used before).
+    """
+    internal = settings.aidetect_internal_token
+    forbidden = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN, detail="admin access required"
+    )
+    if x_api_key:
+        if secrets.compare_digest(x_api_key, internal):
+            return None
+        raise forbidden
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+        if token and secrets.compare_digest(token, internal):
+            return None
+        user_id = decode_token(token, settings)
+        user = await session.get(User, user_id)
+        if user is not None and is_user_admin(user, settings):
+            return user
+        raise forbidden
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="authentication required",
+    )
+
+
+async def require_admin(_actor: Annotated[User | None, Depends(get_admin_actor)]) -> None:
+    """Authorize an admin request (internal token or admin JWT); discard identity."""
+
+
+AdminActorDep = Annotated[User | None, Depends(get_admin_actor)]
+AdminDep = Annotated[None, Depends(require_admin)]

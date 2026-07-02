@@ -25,6 +25,8 @@ const PUBLIC_URL_PATTERNS = [
   /^\/v1\/share\/[^/]+$/, // GET /v1/share/{token}
   /^\/v1\/share\/[^/]+\/trial/, // POST /v1/share/{token}/trial
   /^\/v1\/auth\//, // all auth endpoints
+  /^\/v1\/access-requests$/, // POST /v1/access-requests (unauthenticated)
+  /^\/v1\/auth\/invitations\//, // GET /v1/auth/invitations/{token} (unauthenticated)
 ];
 
 function isPublicUrl(url: string): boolean {
@@ -75,10 +77,39 @@ export interface AuthResponse {
   user: UserInfo;
 }
 
+export interface InvitationResponse {
+  email: string | null;
+  valid: boolean;
+}
+
+export interface AccessRequestPayload {
+  email: string;
+  share_token?: string;
+}
+
+export interface AccessRequestResponse {
+  status: string;
+}
+
 export const authApi = {
-  register(email: string, password: string, name?: string): Promise<AuthResponse> {
+  register(
+    email: string,
+    password: string,
+    name?: string,
+    inviteToken?: string,
+  ): Promise<AuthResponse> {
     return apiClient
-      .post<AuthResponse>('/v1/auth/register', { email, password, name })
+      .post<AuthResponse>('/v1/auth/register', {
+        email,
+        password,
+        name,
+        invite_token: inviteToken,
+      })
+      .then((r) => r.data);
+  },
+  invitation(token: string): Promise<InvitationResponse> {
+    return apiClient
+      .get<InvitationResponse>(`/v1/auth/invitations/${token}`)
       .then((r) => r.data);
   },
   login(email: string, password: string): Promise<AuthResponse> {
@@ -176,6 +207,66 @@ export const shareApi = {
     return apiClient
       .post<ShareTrialResponse>(`/v1/share/${token}/trial`, payload)
       .then((r) => r.data);
+  },
+};
+
+// ── Access requests ─────────────────────────────────────────────────────────
+
+export const accessApi = {
+  request(payload: AccessRequestPayload): Promise<AccessRequestResponse> {
+    return apiClient
+      .post<AccessRequestResponse>('/v1/access-requests', payload)
+      .then((r) => r.data);
+  },
+};
+
+// ── Admin ────────────────────────────────────────────────────────────────────
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string | null;
+  is_admin: boolean;
+  created_at: string;
+}
+
+export interface AdminAccessRequest {
+  id: string;
+  email: string;
+  status: string;
+  source_share_token: string | null;
+  created_at: string;
+}
+
+export interface InviteResult {
+  email: string;
+  url: string;
+  token: string;
+  status: string;
+}
+
+export const adminApi = {
+  users(): Promise<AdminUser[]> {
+    return apiClient.get<AdminUser[]>('/v1/admin/users').then((r) => r.data);
+  },
+  accessRequests(): Promise<AdminAccessRequest[]> {
+    return apiClient.get<AdminAccessRequest[]>('/v1/admin/access-requests').then((r) => r.data);
+  },
+  invite(email: string): Promise<InviteResult> {
+    return apiClient.post<InviteResult>('/v1/admin/invitations', { email }).then((r) => r.data);
+  },
+  inviteRequest(id: string): Promise<InviteResult> {
+    return apiClient
+      .post<InviteResult>(`/v1/admin/access-requests/${id}/invite`)
+      .then((r) => r.data);
+  },
+  setRole(id: string, isAdmin: boolean): Promise<AdminUser> {
+    return apiClient
+      .patch<AdminUser>(`/v1/admin/users/${id}`, { is_admin: isAdmin })
+      .then((r) => r.data);
+  },
+  deleteUser(id: string): Promise<void> {
+    return apiClient.delete(`/v1/admin/users/${id}`).then(() => undefined);
   },
 };
 
