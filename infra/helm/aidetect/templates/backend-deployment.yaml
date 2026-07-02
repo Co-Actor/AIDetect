@@ -20,6 +20,10 @@ spec:
       maxSurge: 1
   template:
     metadata:
+      annotations:
+        # Force a rollout on every deploy so KV-sourced secrets / env changes are
+        # always applied (envFrom values are read only at container start).
+        rollme: {{ randAlphaNum 8 | quote }}
       labels:
         app.kubernetes.io/name: aidetect-backend
         app.kubernetes.io/instance: {{ .Release.Name }}
